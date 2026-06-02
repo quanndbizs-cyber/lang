@@ -93,6 +93,7 @@ function fetch_activity_totals(PDO $db): array
         SELECT
             COALESCE(SUM(stars), 0) AS total_earned,
             COALESCE(SUM(CASE WHEN activity_date = date('now', 'localtime') THEN stars ELSE 0 END), 0) AS today_stars,
+            COALESCE(SUM(CASE WHEN strftime('%Y-%W', activity_date) = strftime('%Y-%W', 'now', 'localtime') THEN stars ELSE 0 END), 0) AS week_stars,
             COALESCE(SUM(CASE WHEN substr(activity_date, 1, 7) = strftime('%Y-%m', 'now', 'localtime') THEN stars ELSE 0 END), 0) AS month_stars
         FROM activities
         WHERE status = 'approved'
@@ -103,6 +104,7 @@ function fetch_activity_totals(PDO $db): array
     return [
         'total_earned' => (int) ($row['total_earned'] ?? 0),
         'today_stars' => (int) ($row['today_stars'] ?? 0),
+        'week_stars' => (int) ($row['week_stars'] ?? 0),
         'month_stars' => (int) ($row['month_stars'] ?? 0),
     ];
 }

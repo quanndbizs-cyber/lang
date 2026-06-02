@@ -66,10 +66,32 @@ function get_next_reward_target(int $currentStars, array $rewardOptions): int
     return max($targets) ?: 0;
 }
 
+function get_next_reward(int $currentStars, array $rewardOptions): array
+{
+    asort($rewardOptions);
+
+    foreach ($rewardOptions as $title => $cost) {
+        if ($currentStars < $cost) {
+            return [
+                'title' => $title,
+                'cost' => (int) $cost,
+            ];
+        }
+    }
+
+    $lastTitle = array_key_last($rewardOptions);
+
+    return [
+        'title' => $lastTitle ? (string) $lastTitle : 'Chưa có phần thưởng',
+        'cost' => $lastTitle ? (int) $rewardOptions[$lastTitle] : 0,
+    ];
+}
+
 function build_dashboard_stats(array $activityTotals, int $totalSpent, array $rewardOptions): array
 {
     $currentStars = $activityTotals['total_earned'] - $totalSpent;
-    $nextRewardCost = get_next_reward_target($currentStars, $rewardOptions);
+    $nextReward = get_next_reward($currentStars, $rewardOptions);
+    $nextRewardCost = $nextReward['cost'];
     $progressBase = max(1, $nextRewardCost);
 
     return [
@@ -77,8 +99,10 @@ function build_dashboard_stats(array $activityTotals, int $totalSpent, array $re
         'total_spent' => $totalSpent,
         'current_stars' => $currentStars,
         'today_stars' => $activityTotals['today_stars'],
+        'week_stars' => $activityTotals['week_stars'],
         'month_stars' => $activityTotals['month_stars'],
         'level_name' => get_level_name($currentStars),
+        'next_reward_title' => $nextReward['title'],
         'next_reward_cost' => $nextRewardCost,
         'missing_stars' => max(0, $nextRewardCost - $currentStars),
         'progress_percent' => min(100, max(0, ($currentStars / $progressBase) * 100)),

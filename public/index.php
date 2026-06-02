@@ -39,16 +39,17 @@ $rewards = fetch_rewards($db);
     <div class="stars">Hiện có: <?=h($dashboard['current_stars'])?>★</div>
     <div class="pill">Đã nhận: <?=h($dashboard['total_earned'])?>★</div><div class="pill">Đã đổi: <?=h($dashboard['total_spent'])?>★</div><div class="pill">Danh hiệu: <?=h($dashboard['level_name'])?></div>
     <div class="stat-grid">
+      <div class="stat">Tổng sao<b><?=h($dashboard['current_stars'])?>★</b></div>
       <div class="stat">Hôm nay<b><?=h($dashboard['today_stars'])?>★</b></div>
+      <div class="stat">Tuần này<b><?=h($dashboard['week_stars'])?>★</b></div>
       <div class="stat">Tháng này<b><?=h($dashboard['month_stars'])?>★</b></div>
-      <div class="stat">Mốc tiếp theo<b><?=h($dashboard['next_reward_cost'])?>★</b></div>
-      <div class="stat">Còn thiếu<b><?=h($dashboard['missing_stars'])?>★</b></div>
     </div>
   </div>
   <?php if (!empty($_SESSION['msg'])): ?><div class="notice"><?=h($_SESSION['msg']); unset($_SESSION['msg']);?></div><?php endif; ?>
   <div class="card" style="margin-top:18px">
-    <div class="two-col"><div><b>Tiến độ tới mốc <?=h($dashboard['next_reward_cost'])?>★</b></div><div style="text-align:right"><?=h($dashboard['current_stars'])?>/<?=h($dashboard['next_reward_cost'])?>★</div></div>
+    <div class="two-col"><div><b>Phần thưởng gần đạt nhất: <?=h($dashboard['next_reward_title'])?> - <?=h($dashboard['next_reward_cost'])?>★</b></div><div style="text-align:right"><?=h($dashboard['current_stars'])?>/<?=h($dashboard['next_reward_cost'])?>★</div></div>
     <div class="progress" style="margin-top:8px"><div class="progress-inner" style="width: <?=$dashboard['progress_percent']?>%"></div></div>
+    <div class="muted" style="margin-top:8px">Còn thiếu <?=h($dashboard['missing_stars'])?>★ để chạm mốc thưởng tiếp theo.</div>
   </div>
 
   <div class="grid">
