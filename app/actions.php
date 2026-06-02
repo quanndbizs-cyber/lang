@@ -1,0 +1,109 @@
+<?php
+
+function handle_request(PDO $db, array $config): void
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        return;
+    }
+
+    $action = $_POST['action'] ?? '';
+
+    if ($action === 'add_daily') {
+        handle_add_daily($db, $config);
+    }
+    if ($action === 'add_single') {
+        handle_add_single($db, $config);
+    }
+    if ($action === 'add_reward') {
+        handle_add_reward($db);
+    }
+    if ($action === 'delete_activity') {
+        handle_delete_activity($db);
+    }
+    if ($action === 'delete_reward') {
+        handle_delete_reward($db);
+    }
+}
+
+function handle_add_daily(PDO $db, array $config): void
+{
+    $date = $_POST['activity_date'] ?: date('Y-m-d');
+    $note = trim($_POST['note'] ?? '');
+    $imagePath = save_uploaded_image('image', $config);
+    $count = 0;
+    $total = 0;
+
+    foreach (($_POST['activities'] ?? []) as $key) {
+        if (!isset($config['activity_options'][$key])) {
+            continue;
+        }
+
+        [$title, $stars] = $config['activity_options'][$key];
+        insert_activity($db, $date, $title, $stars, $note, $imagePath);
+        $count++;
+        $total += $stars;
+        $imagePath = null;
+    }
+
+    $screen = (int) ($_POST['screen_minutes'] ?? 0);
+    if (isset($config['penalty_options'][$screen]) && $config['penalty_options'][$screen][1] !== 0) {
+        [$title, $stars] = $config['penalty_options'][$screen];
+        insert_activity($db, $date, $title, $stars, $note, $imagePath);
+        $count++;
+        $total += $stars;
+    }
+
+    $_SESSION['msg'] = $count > 0 ? "Đã ghi nhận $count mục, tổng {$total}★." : 'Chưa chọn hoạt động nào.';
+    redirect_home();
+}
+
+function handle_add_single(PDO $db, array $config): void
+{
+    $date = $_POST['single_date'] ?: date('Y-m-d');
+    $title = trim($_POST['single_title'] ?? '');
+    $stars = (int) ($_POST['single_stars'] ?? 0);
+    $note = trim($_POST['single_note'] ?? '');
+    $imagePath = save_uploaded_image('single_image', $config);
+
+    if ($title !== '') {
+        insert_activity($db, $date, $title, $stars, $note, $imagePath);
+        $_SESSION['msg'] = 'Đã ghi nhận mục bổ sung.';
+    }
+
+    redirect_home();
+}
+
+function handle_add_reward(PDO $db): void
+{
+    $date = $_POST['reward_date'] ?: date('Y-m-d');
+    $title = trim($_POST['reward_title'] ?? '');
+    $cost = (int) ($_POST['cost'] ?? 0);
+    $note = trim($_POST['reward_note'] ?? '');
+
+    if ($title !== '' && $cost > 0) {
+        insert_reward($db, $date, $title, $cost, $note);
+        $_SESSION['msg'] = 'Đã đổi thưởng.';
+    }
+
+    redirect_home();
+}
+
+function handle_delete_activity(PDO $db): void
+{
+    $id = (int) ($_POST['id'] ?? 0);
+    $imagePath = find_activity_image_path($db, $id);
+
+    if ($imagePath) {
+        @unlink(__DIR__ . '/../public/' . $imagePath);
+    }
+
+    delete_activity($db, $id);
+    redirect_home();
+}
+
+function handle_delete_reward(PDO $db): void
+{
+    $id = (int) ($_POST['id'] ?? 0);
+    delete_reward($db, $id);
+    redirect_home();
+}

@@ -1,153 +1,27 @@
 <?php
 session_start();
-$dbFile = __DIR__ . '/../database/summer.db';
-$uploadDir = __DIR__ . '/uploads';
-if (!is_dir(dirname($dbFile))) mkdir(dirname($dbFile), 0775, true);
-if (!is_dir($uploadDir)) mkdir($uploadDir, 0775, true);
-$db = new PDO('sqlite:' . $dbFile);
-$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$db->exec("CREATE TABLE IF NOT EXISTS activities (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    activity_date TEXT NOT NULL,
-    title TEXT NOT NULL,
-    stars INTEGER NOT NULL,
-    note TEXT,
-    image_path TEXT,
-    status TEXT NOT NULL DEFAULT 'approved',
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-)");
-$db->exec("CREATE TABLE IF NOT EXISTS rewards (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    reward_date TEXT NOT NULL,
-    title TEXT NOT NULL,
-    cost INTEGER NOT NULL,
-    note TEXT,
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-)");
 
-$activityOptions = [
-    'study_2h' => ['Học ban ngày 2 giờ (T2-T6)', 2],
-    'read_book' => ['Đọc sách', 1],
-    'copy_sutra' => ['Chép kinh', 1],
-    'write_story' => ['Viết truyện', 1],
-    'journal' => ['Viết nhật ký', 1],
-    'exercise' => ['Tập thể dục / vận động', 1],
-    'creative' => ['Vẽ tranh / sáng tạo', 1],
-    'housework' => ['Việc nhà được giao', 1],
-    'water_plant' => ['Tưới cây / chăm cây', 1],
-    'feed_fish' => ['Cho cá ăn / chăm bể cá', 1],
-    'clean_room' => ['Dọn bàn học, phòng ngủ', 1],
-    'screen_ok' => ['Không vượt thời gian màn hình', 1],
-];
-$penaltyOptions = [
-    0 => ['Không vượt giờ / không chơi quá quy định', 0],
-    60 => ['Chơi 1 giờ YouTube/TV/Game', -3],
-    120 => ['Chơi 2 giờ YouTube/TV/Game', -10],
-];
-$rewardOptions = [
-    'Hoạt động gia đình' => 20,
-    '1 quyển truyện' => 25,
-    '1 cây nhỏ' => 25,
-    'Phần thưởng tự chọn bất kỳ' => 35,
-    'Về ngủ chơi nhà bà nội' => 50,
-];
-function h($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
-function redirect_home() { header('Location: index.php'); exit; }
-function save_uploaded_image($field, $uploadDir) {
-    if (empty($_FILES[$field]['name']) || !is_uploaded_file($_FILES[$field]['tmp_name'])) return null;
-    $allowed = ['image/jpeg'=>'jpg','image/png'=>'png','image/webp'=>'webp','image/gif'=>'gif'];
-    $mime = mime_content_type($_FILES[$field]['tmp_name']);
-    if (!isset($allowed[$mime]) || $_FILES[$field]['size'] > 5 * 1024 * 1024) {
-        $_SESSION['msg'] = 'Ảnh không hợp lệ hoặc lớn hơn 5MB.';
-        redirect_home();
-    }
-    $filename = date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $allowed[$mime];
-    move_uploaded_file($_FILES[$field]['tmp_name'], $uploadDir . '/' . $filename);
-    return 'uploads/' . $filename;
-}
-function insert_activity($db, $date, $title, $stars, $note, $imagePath) {
-    $stmt = $db->prepare('INSERT INTO activities(activity_date,title,stars,note,image_path,status) VALUES(?,?,?,?,?,?)');
-    $stmt->execute([$date, $title, $stars, $note, $imagePath, 'approved']);
-}
+$config = require __DIR__ . '/../app/config.php';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
-    if ($action === 'add_daily') {
-        $date = $_POST['activity_date'] ?: date('Y-m-d');
-        $note = trim($_POST['note'] ?? '');
-        $imagePath = save_uploaded_image('image', $uploadDir);
-        $count = 0; $total = 0;
-        foreach (($_POST['activities'] ?? []) as $key) {
-            if (isset($activityOptions[$key])) {
-                [$title, $stars] = $activityOptions[$key];
-                insert_activity($db, $date, $title, $stars, $note, $imagePath);
-                $count++; $total += $stars;
-                $imagePath = null; // gắn ảnh cho dòng đầu tiên để tránh lặp ảnh nhiều lần
-            }
-        }
-        $screen = (int)($_POST['screen_minutes'] ?? 0);
-        if (isset($penaltyOptions[$screen]) && $penaltyOptions[$screen][1] !== 0) {
-            [$title, $stars] = $penaltyOptions[$screen];
-            insert_activity($db, $date, $title, $stars, $note, $imagePath);
-            $count++; $total += $stars;
-        }
-        $_SESSION['msg'] = $count > 0 ? "Đã ghi nhận $count mục, tổng {$total}★." : 'Chưa chọn hoạt động nào.';
-        redirect_home();
-    }
-    if ($action === 'add_single') {
-        $date = $_POST['single_date'] ?: date('Y-m-d');
-        $title = trim($_POST['single_title'] ?? '');
-        $stars = (int)($_POST['single_stars'] ?? 0);
-        $note = trim($_POST['single_note'] ?? '');
-        $imagePath = save_uploaded_image('single_image', $uploadDir);
-        if ($title !== '') {
-            insert_activity($db, $date, $title, $stars, $note, $imagePath);
-            $_SESSION['msg'] = 'Đã ghi nhận mục bổ sung.';
-        }
-        redirect_home();
-    }
-    if ($action === 'add_reward') {
-        $date = $_POST['reward_date'] ?: date('Y-m-d');
-        $title = trim($_POST['reward_title'] ?? '');
-        $cost = (int)($_POST['cost'] ?? 0);
-        $note = trim($_POST['reward_note'] ?? '');
-        if ($title !== '' && $cost > 0) {
-            $stmt = $db->prepare('INSERT INTO rewards(reward_date,title,cost,note) VALUES(?,?,?,?)');
-            $stmt->execute([$date, $title, $cost, $note]);
-            $_SESSION['msg'] = 'Đã đổi thưởng.';
-        }
-        redirect_home();
-    }
-    if ($action === 'delete_activity') {
-        $id = (int)$_POST['id'];
-        $row = $db->query('SELECT image_path FROM activities WHERE id=' . $id)->fetch(PDO::FETCH_ASSOC);
-        if ($row && $row['image_path']) @unlink(__DIR__ . '/' . $row['image_path']);
-        $db->prepare('DELETE FROM activities WHERE id=?')->execute([$id]);
-        redirect_home();
-    }
-    if ($action === 'delete_reward') {
-        $db->prepare('DELETE FROM rewards WHERE id=?')->execute([(int)$_POST['id']]);
-        redirect_home();
-    }
-}
+require __DIR__ . '/../app/db.php';
+require __DIR__ . '/../app/functions.php';
+require __DIR__ . '/../app/actions.php';
 
-$totalEarned = (int)$db->query("SELECT COALESCE(SUM(stars),0) FROM activities WHERE status='approved'")->fetchColumn();
-$totalSpent = (int)$db->query("SELECT COALESCE(SUM(cost),0) FROM rewards")->fetchColumn();
-$currentStars = $totalEarned - $totalSpent;
-$todayStars = (int)$db->query("SELECT COALESCE(SUM(stars),0) FROM activities WHERE activity_date=date('now','localtime') AND status='approved'")->fetchColumn();
-$monthStars = (int)$db->query("SELECT COALESCE(SUM(stars),0) FROM activities WHERE substr(activity_date,1,7)=strftime('%Y-%m','now','localtime') AND status='approved'")->fetchColumn();
-$activities = $db->query('SELECT * FROM activities ORDER BY activity_date DESC, id DESC LIMIT 80')->fetchAll(PDO::FETCH_ASSOC);
-$rewards = $db->query('SELECT * FROM rewards ORDER BY reward_date DESC, id DESC LIMIT 30')->fetchAll(PDO::FETCH_ASSOC);
-function levelName($stars) {
-    if ($stars >= 300) return '👑 Công chúa mùa hè';
-    if ($stars >= 200) return '🦄 Nhà sáng tạo';
-    if ($stars >= 100) return '🌻 Siêu chăm chỉ';
-    if ($stars >= 50) return '🌱 Mầm xanh';
-    return '🐣 Chim non';
-}
-$nextRewardCost = 25;
-foreach ([20,25,35,50,100,200,300] as $cost) { if ($currentStars < $cost) { $nextRewardCost = $cost; break; } }
-$progress = min(100, max(0, $currentStars / max(1,$nextRewardCost) * 100));
+$db = connect_database($config);
+
+handle_request($db, $config);
+
+$activityOptions = $config['activity_options'];
+$penaltyOptions = $config['penalty_options'];
+$rewardOptions = $config['reward_options'];
+
+$dashboard = build_dashboard_stats(
+    fetch_activity_totals($db),
+    fetch_total_spent($db),
+    $rewardOptions
+);
+$activities = fetch_activities($db);
+$rewards = fetch_rewards($db);
 ?>
 <!doctype html>
 <html lang="vi">
@@ -162,19 +36,19 @@ $progress = min(100, max(0, $currentStars / max(1,$nextRewardCost) * 100));
     <h1>🌈 BẢNG SAO MÙA HÈ ⭐</h1>
     <div class="sub">Học tốt · Vui khỏe · Tự lập · Sáng tạo · Ít màn hình</div>
     <p>Mỗi ngày cố gắng hơn hôm qua một chút nhé!</p>
-    <div class="stars">Hiện có: <?=h($currentStars)?>★</div>
-    <div class="pill">Đã nhận: <?=h($totalEarned)?>★</div><div class="pill">Đã đổi: <?=h($totalSpent)?>★</div><div class="pill">Danh hiệu: <?=h(levelName($currentStars))?></div>
+    <div class="stars">Hiện có: <?=h($dashboard['current_stars'])?>★</div>
+    <div class="pill">Đã nhận: <?=h($dashboard['total_earned'])?>★</div><div class="pill">Đã đổi: <?=h($dashboard['total_spent'])?>★</div><div class="pill">Danh hiệu: <?=h($dashboard['level_name'])?></div>
     <div class="stat-grid">
-      <div class="stat">Hôm nay<b><?=h($todayStars)?>★</b></div>
-      <div class="stat">Tháng này<b><?=h($monthStars)?>★</b></div>
-      <div class="stat">Mốc tiếp theo<b><?=h($nextRewardCost)?>★</b></div>
-      <div class="stat">Còn thiếu<b><?=h(max(0,$nextRewardCost-$currentStars))?>★</b></div>
+      <div class="stat">Hôm nay<b><?=h($dashboard['today_stars'])?>★</b></div>
+      <div class="stat">Tháng này<b><?=h($dashboard['month_stars'])?>★</b></div>
+      <div class="stat">Mốc tiếp theo<b><?=h($dashboard['next_reward_cost'])?>★</b></div>
+      <div class="stat">Còn thiếu<b><?=h($dashboard['missing_stars'])?>★</b></div>
     </div>
   </div>
   <?php if (!empty($_SESSION['msg'])): ?><div class="notice"><?=h($_SESSION['msg']); unset($_SESSION['msg']);?></div><?php endif; ?>
   <div class="card" style="margin-top:18px">
-    <div class="two-col"><div><b>Tiến độ tới mốc <?=h($nextRewardCost)?>★</b></div><div style="text-align:right"><?=h($currentStars)?>/<?=h($nextRewardCost)?>★</div></div>
-    <div class="progress" style="margin-top:8px"><div class="progress-inner" style="width: <?=$progress?>%"></div></div>
+    <div class="two-col"><div><b>Tiến độ tới mốc <?=h($dashboard['next_reward_cost'])?>★</b></div><div style="text-align:right"><?=h($dashboard['current_stars'])?>/<?=h($dashboard['next_reward_cost'])?>★</div></div>
+    <div class="progress" style="margin-top:8px"><div class="progress-inner" style="width: <?=$dashboard['progress_percent']?>%"></div></div>
   </div>
 
   <div class="grid">
