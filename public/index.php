@@ -13,6 +13,7 @@ handle_request($db, $config);
 
 $activityOptions = $config['activity_options'];
 $penaltyOptions = $config['penalty_options'];
+$quickActions = $config['quick_actions'];
 $rewardOptions = $config['reward_options'];
 
 $dashboard = build_dashboard_stats(
@@ -50,6 +51,29 @@ $rewards = fetch_rewards($db);
     <div class="two-col"><div><b>Phần thưởng gần đạt nhất: <?=h($dashboard['next_reward_title'])?> - <?=h($dashboard['next_reward_cost'])?>★</b></div><div style="text-align:right"><?=h($dashboard['current_stars'])?>/<?=h($dashboard['next_reward_cost'])?>★</div></div>
     <div class="progress" style="margin-top:8px"><div class="progress-inner" style="width: <?=$dashboard['progress_percent']?>%"></div></div>
     <div class="muted" style="margin-top:8px">Còn thiếu <?=h($dashboard['missing_stars'])?>★ để chạm mốc thưởng tiếp theo.</div>
+  </div>
+
+  <div class="card no-print quick-card" style="margin-top:18px">
+    <div class="quick-head">
+      <h2>⚡ Ghi nhanh trong 1 chạm</h2>
+      <div class="quick-date">
+        <label for="quickDate"><b>Ngày áp dụng</b></label>
+        <input type="date" id="quickDate" value="<?=date('Y-m-d')?>">
+      </div>
+    </div>
+    <div class="quick-grid">
+      <?php foreach ($quickActions as $key => [$label, $stars]): ?>
+      <form method="post">
+        <input type="hidden" name="action" value="add_quick_action">
+        <input type="hidden" name="quick_action" value="<?=h($key)?>">
+        <input type="hidden" name="quick_date" value="<?=date('Y-m-d')?>" data-quick-date>
+        <button class="quick-btn <?= $stars < 0 ? 'danger' : 'good' ?>" type="submit">
+          <span><?=h($label)?></span>
+          <strong><?=($stars > 0 ? '+' : '').h($stars)?>★</strong>
+        </button>
+      </form>
+      <?php endforeach; ?>
+    </div>
   </div>
 
   <div class="grid">
@@ -142,5 +166,7 @@ $rewards = fetch_rewards($db);
 <script>
 const rewardSelect=document.getElementById('rewardSelect'), costInput=document.getElementById('costInput');
 if(rewardSelect){function syncReward(){costInput.value=rewardSelect.options[rewardSelect.selectedIndex].dataset.cost} rewardSelect.addEventListener('change',syncReward); syncReward();}
+const quickDate=document.getElementById('quickDate');
+if(quickDate){function syncQuickDates(){document.querySelectorAll('[data-quick-date]').forEach((input)=>{input.value=quickDate.value;});} quickDate.addEventListener('change',syncQuickDates); syncQuickDates();}
 </script>
 </body></html>

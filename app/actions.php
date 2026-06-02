@@ -17,6 +17,9 @@ function handle_request(PDO $db, array $config): void
     if ($action === 'add_reward') {
         handle_add_reward($db);
     }
+    if ($action === 'add_quick_action') {
+        handle_add_quick_action($db, $config);
+    }
     if ($action === 'delete_activity') {
         handle_delete_activity($db);
     }
@@ -84,6 +87,25 @@ function handle_add_reward(PDO $db): void
         insert_reward($db, $date, $title, $cost, $note);
         $_SESSION['msg'] = 'Đã đổi thưởng.';
     }
+
+    redirect_home();
+}
+
+function handle_add_quick_action(PDO $db, array $config): void
+{
+    $quickActionKey = $_POST['quick_action'] ?? '';
+    $date = $_POST['quick_date'] ?: date('Y-m-d');
+
+    if (!isset($config['quick_actions'][$quickActionKey])) {
+        $_SESSION['msg'] = 'Không tìm thấy hành động nhanh.';
+        redirect_home();
+    }
+
+    [$title, $stars] = $config['quick_actions'][$quickActionKey];
+    insert_activity($db, $date, $title, $stars, '', null);
+
+    $sign = $stars > 0 ? '+' : '';
+    $_SESSION['msg'] = "Đã ghi nhanh {$title} ({$sign}{$stars}★).";
 
     redirect_home();
 }
