@@ -23,6 +23,9 @@ function handle_request(PDO $db, array $config): void
     if ($action === 'delete_activity') {
         handle_delete_activity($db);
     }
+    if ($action === 'update_activity_parent_feedback') {
+        handle_update_activity_parent_feedback($db);
+    }
     if ($action === 'delete_reward') {
         handle_delete_reward($db);
     }
@@ -145,6 +148,25 @@ function handle_delete_activity(PDO $db): void
     if ($activity) {
         insert_audit_log($db, 'Gia đình', 'deleted', 'activity', $id, "Xóa hoạt động {$activity['title']} ({$activity['stars']}★) ngày {$activity['activity_date']}.");
     }
+    redirect_home();
+}
+
+function handle_update_activity_parent_feedback(PDO $db): void
+{
+    $id = (int) ($_POST['id'] ?? 0);
+    $liked = isset($_POST['parent_liked']);
+    $comment = trim($_POST['parent_comment'] ?? '');
+    $activity = find_activity($db, $id);
+
+    if (!$activity) {
+        $_SESSION['msg'] = 'Không tìm thấy hoạt động để phản hồi.';
+        redirect_home();
+    }
+
+    update_activity_parent_feedback($db, $id, $liked, $comment);
+    insert_audit_log($db, 'Bố mẹ', 'updated', 'activity', $id, "Cập nhật phản hồi cho hoạt động {$activity['title']}.");
+
+    $_SESSION['msg'] = 'Đã lưu phản hồi của bố mẹ.';
     redirect_home();
 }
 

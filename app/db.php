@@ -45,6 +45,12 @@ function initialize_database(PDO $db): void
     if (!in_array('category', $columnNames, true)) {
         $db->exec("ALTER TABLE activities ADD COLUMN category TEXT NOT NULL DEFAULT 'other'");
     }
+    if (!in_array('parent_liked', $columnNames, true)) {
+        $db->exec("ALTER TABLE activities ADD COLUMN parent_liked INTEGER NOT NULL DEFAULT 0");
+    }
+    if (!in_array('parent_comment', $columnNames, true)) {
+        $db->exec("ALTER TABLE activities ADD COLUMN parent_comment TEXT");
+    }
 
     $db->exec(
         "CREATE TABLE IF NOT EXISTS rewards (
@@ -130,6 +136,12 @@ function delete_activity(PDO $db, int $id): void
 {
     $stmt = $db->prepare('DELETE FROM activities WHERE id = ?');
     $stmt->execute([$id]);
+}
+
+function update_activity_parent_feedback(PDO $db, int $id, bool $liked, string $comment): void
+{
+    $stmt = $db->prepare('UPDATE activities SET parent_liked = ?, parent_comment = ? WHERE id = ?');
+    $stmt->execute([$liked ? 1 : 0, $comment, $id]);
 }
 
 function delete_reward(PDO $db, int $id): void
