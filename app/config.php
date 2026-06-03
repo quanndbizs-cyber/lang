@@ -9,6 +9,7 @@ return [
         'image/png' => 'png',
         'image/webp' => 'webp',
     ],
+    'parent_password' => getenv('PARENT_PASSWORD') ?: '1234',
     'activity_categories' => [
         'study' => 'Học tập',
         'reading' => 'Đọc sách',

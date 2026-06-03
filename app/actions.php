@@ -8,6 +8,12 @@ function handle_request(PDO $db, array $config): void
 
     $action = $_POST['action'] ?? '';
 
+    if ($action === 'parent_login') {
+        handle_parent_login($config);
+    }
+    if ($action === 'parent_logout') {
+        handle_parent_logout();
+    }
     if ($action === 'add_daily') {
         handle_add_daily($db, $config);
     }
@@ -21,14 +27,40 @@ function handle_request(PDO $db, array $config): void
         handle_add_quick_action($db, $config);
     }
     if ($action === 'delete_activity') {
+        require_parent_login();
         handle_delete_activity($db);
     }
     if ($action === 'update_activity_parent_feedback') {
+        require_parent_login();
         handle_update_activity_parent_feedback($db);
     }
     if ($action === 'delete_reward') {
+        require_parent_login();
         handle_delete_reward($db);
     }
+}
+
+function handle_parent_login(array $config): void
+{
+    $password = (string) ($_POST['parent_password'] ?? '');
+
+    if (verify_parent_password($password, $config)) {
+        session_regenerate_id(true);
+        $_SESSION['parent_logged_in'] = true;
+        $_SESSION['msg'] = 'Bố mẹ đã đăng nhập.';
+    } else {
+        $_SESSION['msg'] = 'Mật khẩu bố mẹ chưa đúng.';
+    }
+
+    redirect_home();
+}
+
+function handle_parent_logout(): void
+{
+    unset($_SESSION['parent_logged_in']);
+    $_SESSION['msg'] = 'Bố mẹ đã đăng xuất.';
+
+    redirect_home();
 }
 
 function handle_add_daily(PDO $db, array $config): void

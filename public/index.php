@@ -16,6 +16,7 @@ $activityCategories = $config['activity_categories'];
 $penaltyOptions = $config['penalty_options'];
 $quickActions = $config['quick_actions'];
 $rewardOptions = $config['reward_options'];
+$parentLoggedIn = is_parent_logged_in();
 
 $dashboard = build_dashboard_stats(
     fetch_activity_totals($db),
@@ -24,7 +25,7 @@ $dashboard = build_dashboard_stats(
 );
 $activities = fetch_activities($db);
 $rewards = fetch_rewards($db);
-$auditLogs = fetch_audit_logs($db);
+$auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
 ?>
 <!doctype html>
 <html lang="vi">
@@ -49,6 +50,22 @@ $auditLogs = fetch_audit_logs($db);
     </div>
   </div>
   <?php if (!empty($_SESSION['msg'])): ?><div class="notice"><?=h($_SESSION['msg']); unset($_SESSION['msg']);?></div><?php endif; ?>
+  <div class="card no-print parent-login-card" style="margin-top:18px">
+    <h2>🔐 Khu vực bố mẹ</h2>
+    <?php if ($parentLoggedIn): ?>
+      <form class="parent-login-form" method="post">
+        <input type="hidden" name="action" value="parent_logout">
+        <span class="notice inline-notice">Đã đăng nhập quyền bố mẹ.</span>
+        <button class="btn small blue">Đăng xuất</button>
+      </form>
+    <?php else: ?>
+      <form class="parent-login-form" method="post">
+        <input type="hidden" name="action" value="parent_login">
+        <input type="password" name="parent_password" placeholder="Mật khẩu bố mẹ" required>
+        <button class="btn small blue">Đăng nhập</button>
+      </form>
+    <?php endif; ?>
+  </div>
   <div class="card" style="margin-top:18px">
     <div class="two-col"><div><b>Phần thưởng gần đạt nhất: <?=h($dashboard['next_reward_title'])?> - <?=h($dashboard['next_reward_cost'])?>★</b></div><div style="text-align:right"><?=h($dashboard['current_stars'])?>/<?=h($dashboard['next_reward_cost'])?>★</div></div>
     <div class="progress" style="margin-top:8px"><div class="progress-inner" style="width: <?=$dashboard['progress_percent']?>%"></div></div>
@@ -161,23 +178,23 @@ $auditLogs = fetch_audit_logs($db);
   <div class="card" style="margin-top:18px">
     <h2>📅 Lịch sử thành tích</h2>
     <div class="table-wrap"><table class="table"><tr><th>Ngày</th><th>Icon</th><th>Loại</th><th>Hoạt động</th><th>Sao</th><th>Ghi chú</th><th>Ảnh</th><th>Phản hồi bố mẹ</th><th class="no-print"></th></tr>
-      <?php foreach ($activities as $a): ?><tr><td><?=h($a['activity_date'])?></td><td><span class="history-icon"><?=h(get_activity_icon($a))?></span></td><td><span class="badge"><?=h($activityCategories[$a['category'] ?? 'other'] ?? 'Khác')?></span></td><td><?=h($a['title'])?></td><td><b class="<?= $a['stars']<0?'star minus':'positive' ?>"><?=($a['stars']>0?'+':'').h($a['stars'])?>★</b></td><td><?=h($a['note'])?></td><td><?php if ($a['image_path']): ?><a href="<?=h($a['image_path'])?>" target="_blank"><img class="photo" src="<?=h($a['image_path'])?>"></a><?php endif; ?></td><td><form class="parent-feedback no-print" method="post"><input type="hidden" name="action" value="update_activity_parent_feedback"><input type="hidden" name="id" value="<?=h($a['id'])?>"><label class="like-toggle"><input type="checkbox" name="parent_liked" value="1" <?=((int) ($a['parent_liked'] ?? 0) === 1) ? 'checked' : ''?>> ❤️ Like</label><textarea name="parent_comment" placeholder="Bố mẹ nhận xét..."><?=h($a['parent_comment'] ?? '')?></textarea><button class="btn small blue">Lưu</button></form><div class="print-feedback"><?=((int) ($a['parent_liked'] ?? 0) === 1) ? '❤️ ' : ''?><?=h($a['parent_comment'] ?? '')?></div></td><td class="no-print"><form method="post" onsubmit="return confirm('Xóa dòng này?')"><input type="hidden" name="action" value="delete_activity"><input type="hidden" name="id" value="<?=h($a['id'])?>"><button class="btn small red">Xóa</button></form></td></tr><?php endforeach; ?>
+      <?php foreach ($activities as $a): ?><tr><td><?=h($a['activity_date'])?></td><td><span class="history-icon"><?=h(get_activity_icon($a))?></span></td><td><span class="badge"><?=h($activityCategories[$a['category'] ?? 'other'] ?? 'Khác')?></span></td><td><?=h($a['title'])?></td><td><b class="<?= $a['stars']<0?'star minus':'positive' ?>"><?=($a['stars']>0?'+':'').h($a['stars'])?>★</b></td><td><?=h($a['note'])?></td><td><?php if ($a['image_path']): ?><a href="<?=h($a['image_path'])?>" target="_blank"><img class="photo" src="<?=h($a['image_path'])?>"></a><?php endif; ?></td><td><?php if ($parentLoggedIn): ?><form class="parent-feedback no-print" method="post"><input type="hidden" name="action" value="update_activity_parent_feedback"><input type="hidden" name="id" value="<?=h($a['id'])?>"><label class="like-toggle"><input type="checkbox" name="parent_liked" value="1" <?=((int) ($a['parent_liked'] ?? 0) === 1) ? 'checked' : ''?>> ❤️ Like</label><textarea name="parent_comment" placeholder="Bố mẹ nhận xét..."><?=h($a['parent_comment'] ?? '')?></textarea><button class="btn small blue">Lưu</button></form><?php else: ?><div class="muted no-print">Bố mẹ đăng nhập để phản hồi.</div><?php endif; ?><div class="print-feedback parent-feedback-text"><?=((int) ($a['parent_liked'] ?? 0) === 1) ? '❤️ ' : ''?><?=h($a['parent_comment'] ?? '')?></div><div class="parent-feedback-text no-print"><?=((int) ($a['parent_liked'] ?? 0) === 1) ? '❤️ ' : ''?><?=h($a['parent_comment'] ?? '')?></div></td><td class="no-print"><?php if ($parentLoggedIn): ?><form method="post" onsubmit="return confirm('Xóa dòng này?')"><input type="hidden" name="action" value="delete_activity"><input type="hidden" name="id" value="<?=h($a['id'])?>"><button class="btn small red">Xóa</button></form><?php else: ?><span class="muted">Cần login</span><?php endif; ?></td></tr><?php endforeach; ?>
     </table></div>
   </div>
 
   <div class="card" style="margin-top:18px">
     <h2>🎁 Lịch sử đổi thưởng</h2>
     <div class="table-wrap"><table class="table"><tr><th>Ngày</th><th>Phần thưởng</th><th>Sao dùng</th><th>Ghi chú</th><th class="no-print"></th></tr>
-      <?php foreach ($rewards as $r): ?><tr><td><?=h($r['reward_date'])?></td><td><?=h($r['title'])?></td><td><b class="danger">-<?=h($r['cost'])?>★</b></td><td><?=h($r['note'])?></td><td class="no-print"><form method="post" onsubmit="return confirm('Xóa phần thưởng này?')"><input type="hidden" name="action" value="delete_reward"><input type="hidden" name="id" value="<?=h($r['id'])?>"><button class="btn small red">Xóa</button></form></td></tr><?php endforeach; ?>
+      <?php foreach ($rewards as $r): ?><tr><td><?=h($r['reward_date'])?></td><td><?=h($r['title'])?></td><td><b class="danger">-<?=h($r['cost'])?>★</b></td><td><?=h($r['note'])?></td><td class="no-print"><?php if ($parentLoggedIn): ?><form method="post" onsubmit="return confirm('Xóa phần thưởng này?')"><input type="hidden" name="action" value="delete_reward"><input type="hidden" name="id" value="<?=h($r['id'])?>"><button class="btn small red">Xóa</button></form><?php else: ?><span class="muted">Cần login</span><?php endif; ?></td></tr><?php endforeach; ?>
     </table></div>
   </div>
 
-  <div class="card parent-audit" style="margin-top:18px">
+  <?php if ($parentLoggedIn): ?><div class="card parent-audit" style="margin-top:18px">
     <h2>🧾 Nhật ký audit cho bố mẹ</h2>
     <div class="table-wrap"><table class="table"><tr><th>Thời gian</th><th>Người thực hiện</th><th>Hành động</th><th>Loại</th><th>Nội dung</th></tr>
       <?php foreach ($auditLogs as $log): ?><tr><td><?=h($log['created_at'])?></td><td><?=h($log['actor'])?></td><td><span class="badge"><?=h($log['action'])?></span></td><td><?=h($log['entity_type'])?></td><td><?=h($log['description'])?></td></tr><?php endforeach; ?>
     </table></div>
-  </div>
+  </div><?php endif; ?>
   <div class="footer">Con làm được! ⭐ Cố gắng mỗi ngày nhé! 🐰</div>
 </div>
 <script>

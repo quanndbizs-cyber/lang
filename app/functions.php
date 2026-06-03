@@ -11,6 +11,26 @@ function redirect_home(): void
     exit;
 }
 
+function is_parent_logged_in(): bool
+{
+    return !empty($_SESSION['parent_logged_in']);
+}
+
+function require_parent_login(): void
+{
+    if (is_parent_logged_in()) {
+        return;
+    }
+
+    $_SESSION['msg'] = 'Bố mẹ cần đăng nhập để thực hiện thao tác này.';
+    redirect_home();
+}
+
+function verify_parent_password(string $password, array $config): bool
+{
+    return hash_equals((string) $config['parent_password'], $password);
+}
+
 function sanitize_activity_category(string $category, array $config): string
 {
     return isset($config['activity_categories'][$category]) ? $category : 'other';
