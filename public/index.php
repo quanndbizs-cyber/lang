@@ -178,7 +178,34 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
   <div class="card" style="margin-top:18px">
     <h2>📅 Lịch sử thành tích</h2>
     <div class="table-wrap"><table class="table"><tr><th>Ngày</th><th>Icon</th><th>Loại</th><th>Hoạt động</th><th>Sao</th><th>Ghi chú</th><th>Ảnh</th><th>Phản hồi bố mẹ</th><th class="no-print"></th></tr>
-      <?php foreach ($activities as $a): ?><tr><td><?=h($a['activity_date'])?></td><td><span class="history-icon"><?=h(get_activity_icon($a))?></span></td><td><span class="badge"><?=h($activityCategories[$a['category'] ?? 'other'] ?? 'Khác')?></span></td><td><?=h($a['title'])?></td><td><b class="<?= $a['stars']<0?'star minus':'positive' ?>"><?=($a['stars']>0?'+':'').h($a['stars'])?>★</b></td><td><?=h($a['note'])?></td><td><?php if ($a['image_path']): ?><a href="<?=h($a['image_path'])?>" target="_blank"><img class="photo" src="<?=h($a['image_path'])?>"></a><?php endif; ?></td><td><?php if ($parentLoggedIn): ?><form class="parent-feedback no-print" method="post"><input type="hidden" name="action" value="update_activity_parent_feedback"><input type="hidden" name="id" value="<?=h($a['id'])?>"><label class="like-toggle"><input type="checkbox" name="parent_liked" value="1" <?=((int) ($a['parent_liked'] ?? 0) === 1) ? 'checked' : ''?>> ❤️ Like</label><textarea name="parent_comment" placeholder="Bố mẹ nhận xét..."><?=h($a['parent_comment'] ?? '')?></textarea><button class="btn small blue">Lưu</button></form><?php else: ?><div class="muted no-print">Bố mẹ đăng nhập để phản hồi.</div><?php endif; ?><div class="print-feedback parent-feedback-text"><?=((int) ($a['parent_liked'] ?? 0) === 1) ? '❤️ ' : ''?><?=h($a['parent_comment'] ?? '')?></div><div class="parent-feedback-text no-print"><?=((int) ($a['parent_liked'] ?? 0) === 1) ? '❤️ ' : ''?><?=h($a['parent_comment'] ?? '')?></div></td><td class="no-print"><?php if ($parentLoggedIn): ?><form method="post" onsubmit="return confirm('Xóa dòng này?')"><input type="hidden" name="action" value="delete_activity"><input type="hidden" name="id" value="<?=h($a['id'])?>"><button class="btn small red">Xóa</button></form><?php else: ?><span class="muted">Cần login</span><?php endif; ?></td></tr><?php endforeach; ?>
+      <?php foreach ($activities as $a): ?>
+        <?php $feedbackText = ((int) ($a['parent_liked'] ?? 0) === 1 ? '❤️ ' : '') . ($a['parent_comment'] ?? ''); ?>
+        <tr>
+          <td><?=h($a['activity_date'])?></td>
+          <td><span class="history-icon"><?=h(get_activity_icon($a))?></span></td>
+          <td><span class="badge"><?=h($activityCategories[$a['category'] ?? 'other'] ?? 'Khác')?></span></td>
+          <td><?=h($a['title'])?></td>
+          <td><b class="<?= $a['stars']<0?'star minus':'positive' ?>"><?=($a['stars']>0?'+':'').h($a['stars'])?>★</b></td>
+          <td><?=h($a['note'])?></td>
+          <td><?php if ($a['image_path']): ?><a href="<?=h($a['image_path'])?>" target="_blank"><img class="photo" src="<?=h($a['image_path'])?>"></a><?php endif; ?></td>
+          <td>
+            <?php if ($parentLoggedIn): ?>
+              <form class="parent-feedback no-print" method="post" data-parent-feedback>
+                <input type="hidden" name="action" value="update_activity_parent_feedback">
+                <input type="hidden" name="id" value="<?=h($a['id'])?>">
+                <label class="like-toggle"><input type="checkbox" name="parent_liked" value="1" <?=((int) ($a['parent_liked'] ?? 0) === 1) ? 'checked' : ''?>> ❤️ Like</label>
+                <textarea name="parent_comment" placeholder="Bố mẹ nhận xét..."><?=h($a['parent_comment'] ?? '')?></textarea>
+                <div class="parent-feedback-actions"><button class="btn small blue">Lưu</button><span class="muted" data-feedback-status></span></div>
+              </form>
+            <?php else: ?>
+              <div class="muted no-print">Bố mẹ đăng nhập để phản hồi.</div>
+            <?php endif; ?>
+            <div class="print-feedback parent-feedback-text" data-feedback-print><?=h($feedbackText)?></div>
+            <div class="parent-feedback-text no-print" data-feedback-display><?=h($feedbackText)?></div>
+          </td>
+          <td class="no-print"><?php if ($parentLoggedIn): ?><form method="post" onsubmit="return confirm('Xóa dòng này?')"><input type="hidden" name="action" value="delete_activity"><input type="hidden" name="id" value="<?=h($a['id'])?>"><button class="btn small red">Xóa</button></form><?php else: ?><span class="muted">Cần login</span><?php endif; ?></td>
+        </tr>
+      <?php endforeach; ?>
     </table></div>
   </div>
 
@@ -202,5 +229,43 @@ const rewardSelect=document.getElementById('rewardSelect'), costInput=document.g
 if(rewardSelect){function syncReward(){costInput.value=rewardSelect.options[rewardSelect.selectedIndex].dataset.cost} rewardSelect.addEventListener('change',syncReward); syncReward();}
 const quickDate=document.getElementById('quickDate');
 if(quickDate){function syncQuickDates(){document.querySelectorAll('[data-quick-date]').forEach((input)=>{input.value=quickDate.value;});} quickDate.addEventListener('change',syncQuickDates); syncQuickDates();}
+document.querySelectorAll('[data-parent-feedback]').forEach((form)=>{
+  const checkbox=form.querySelector('input[name="parent_liked"]');
+  const status=form.querySelector('[data-feedback-status]');
+  const display=form.parentElement.querySelector('[data-feedback-display]');
+  const printDisplay=form.parentElement.querySelector('[data-feedback-print]');
+  let saveSeq=0;
+
+  async function saveFeedback(){
+    const currentSeq=++saveSeq;
+    form.classList.add('is-saving');
+    if(status){status.textContent='Đang lưu...';}
+
+    try{
+      const response=await fetch(window.location.pathname,{
+        method:'POST',
+        body:new FormData(form),
+        headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}
+      });
+      const payload=await response.json();
+      if(currentSeq!==saveSeq){return;}
+      if(!response.ok||!payload.ok){throw new Error(payload.message||'Không lưu được phản hồi.');}
+      if(display){display.textContent=payload.display_text;}
+      if(printDisplay){printDisplay.textContent=payload.display_text;}
+      if(status){status.textContent='Đã lưu';}
+    }catch(error){
+      if(currentSeq!==saveSeq){return;}
+      if(status){status.textContent=error.message;}
+    }finally{
+      if(currentSeq===saveSeq){form.classList.remove('is-saving');}
+    }
+  }
+
+  form.addEventListener('submit',(event)=>{
+    event.preventDefault();
+    saveFeedback();
+  });
+  if(checkbox){checkbox.addEventListener('change',saveFeedback);}
+});
 </script>
 </body></html>

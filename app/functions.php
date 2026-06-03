@@ -11,6 +11,20 @@ function redirect_home(): void
     exit;
 }
 
+function is_ajax_request(): bool
+{
+    return str_contains(strtolower($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json')
+        || strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
+}
+
+function json_response(array $payload, int $statusCode = 200): void
+{
+    http_response_code($statusCode);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 function is_parent_logged_in(): bool
 {
     return !empty($_SESSION['parent_logged_in']);
@@ -20,6 +34,13 @@ function require_parent_login(): void
 {
     if (is_parent_logged_in()) {
         return;
+    }
+
+    if (is_ajax_request()) {
+        json_response([
+            'ok' => false,
+            'message' => 'Bố mẹ cần đăng nhập để thực hiện thao tác này.',
+        ], 403);
     }
 
     $_SESSION['msg'] = 'Bố mẹ cần đăng nhập để thực hiện thao tác này.';

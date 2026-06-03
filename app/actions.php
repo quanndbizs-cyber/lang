@@ -191,12 +191,30 @@ function handle_update_activity_parent_feedback(PDO $db): void
     $activity = find_activity($db, $id);
 
     if (!$activity) {
+        if (is_ajax_request()) {
+            json_response([
+                'ok' => false,
+                'message' => 'Không tìm thấy hoạt động để phản hồi.',
+            ], 404);
+        }
+
         $_SESSION['msg'] = 'Không tìm thấy hoạt động để phản hồi.';
         redirect_home();
     }
 
     update_activity_parent_feedback($db, $id, $liked, $comment);
     insert_audit_log($db, 'Bố mẹ', 'updated', 'activity', $id, "Cập nhật phản hồi cho hoạt động {$activity['title']}.");
+
+    if (is_ajax_request()) {
+        json_response([
+            'ok' => true,
+            'message' => 'Đã lưu phản hồi của bố mẹ.',
+            'id' => $id,
+            'liked' => $liked,
+            'comment' => $comment,
+            'display_text' => ($liked ? '❤️ ' : '') . $comment,
+        ]);
+    }
 
     $_SESSION['msg'] = 'Đã lưu phản hồi của bố mẹ.';
     redirect_home();

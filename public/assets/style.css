@@ -22,6 +22,8 @@ body{margin:0;font-family:Arial,"Segoe UI",sans-serif;background:linear-gradient
 .history-icon{display:inline-block;min-width:34px;text-align:center;font-size:24px}
 .parent-feedback{display:grid;gap:6px;min-width:190px}
 .parent-feedback textarea{min-height:54px;padding:8px;font-size:13px}
+.parent-feedback-actions{display:flex;align-items:center;gap:8px}
+.parent-feedback.is-saving{opacity:.7}
 .like-toggle{font-weight:bold;color:#d81b60}
 .print-feedback{display:none}
 .parent-login-form{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
