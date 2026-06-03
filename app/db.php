@@ -190,6 +190,14 @@ function fetch_activities(PDO $db, int $limit = 30): array
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+function fetch_today_activities(PDO $db): array
+{
+    $stmt = $db->prepare("SELECT * FROM activities WHERE activity_date = date('now', 'localtime') ORDER BY created_at DESC, id DESC");
+    $stmt->execute();
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 function fetch_rewards(PDO $db, int $limit = 30): array
 {
     $stmt = $db->prepare('SELECT * FROM rewards ORDER BY reward_date DESC, id DESC LIMIT ?');

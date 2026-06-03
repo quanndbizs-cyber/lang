@@ -29,5 +29,13 @@ body{margin:0;font-family:Arial,"Segoe UI",sans-serif;background:linear-gradient
 .parent-login-form{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
 .inline-notice{margin:0}
 .parent-feedback-text{margin-top:6px;font-weight:bold;color:#455a64}
-@media(max-width:850px){.grid,.stat-grid,.two-col,.quick-grid,.quick-head,.quick-proof,.form-row,.parent-login-form{grid-template-columns:1fr}.quick-head{display:grid}.quick-date{display:grid;gap:6px}.quick-date input{min-width:0}.quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:32px}.hero:before,.hero:after{font-size:28px}.stars{font-size:34px}.wrap{padding:10px}.card{padding:14px}}
+.today-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff7d6;border:2px dashed #ffd65a;border-radius:18px;padding:12px;margin-bottom:12px}
+.today-summary strong{font-size:28px;color:#ff9800}
+.today-list{display:grid;gap:10px}
+.today-item{display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;border-bottom:1px dashed #ddd;padding:8px 0}
+.today-stars{font-size:18px;font-weight:bold;white-space:nowrap}
+.today-note{margin-top:4px}
+.small-photo{width:58px;height:46px}
+.empty-state{background:#f6fbff;border:2px dashed #d9f0ff;border-radius:18px;padding:16px;text-align:center;color:#607d8b;font-weight:bold}
+@media(max-width:850px){.grid,.stat-grid,.two-col,.quick-grid,.quick-head,.quick-proof,.form-row,.parent-login-form{grid-template-columns:1fr}.quick-head{display:grid}.quick-date{display:grid;gap:6px}.quick-date input{min-width:0}.quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.today-item{grid-template-columns:auto 1fr auto}.today-item .photo{grid-column:2/4}h1{font-size:32px}.hero:before,.hero:after{font-size:28px}.stars{font-size:34px}.wrap{padding:10px}.card{padding:14px}}
 @media print{.no-print{display:none}.print-feedback{display:block}.wrap{max-width:none}.grid{grid-template-columns:1fr 1fr}.card{break-inside:avoid}body{background:white}.hero{box-shadow:none}.table-wrap{overflow:visible}}

@@ -24,6 +24,7 @@ $dashboard = build_dashboard_stats(
     $rewardOptions
 );
 $activities = fetch_activities($db);
+$todayActivities = fetch_today_activities($db);
 $rewards = fetch_rewards($db);
 $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
 ?>
@@ -97,27 +98,30 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
   </form>
 
   <div class="grid">
-    <div class="card no-print">
+    <div class="card today-card">
       <h2>✅ Ghi nhận thành tích hôm nay</h2>
-      <form method="post" enctype="multipart/form-data">
-        <input type="hidden" name="action" value="add_daily">
-        <p><b>Ngày</b><input type="date" name="activity_date" value="<?=date('Y-m-d')?>"></p>
-        <div class="activities">
-          <?php foreach ($activityOptions as $key=>$item): [$text,$star] = $item; ?>
-          <div class="rowline"><label><input type="checkbox" name="activities[]" value="<?=h($key)?>"><?=h($text)?></label><div class="star">+<?=h($star)?>★</div></div>
+      <div class="today-summary">
+        <div>Hôm nay <b><?=h(date('d/m/Y'))?></b></div>
+        <strong><?=h($dashboard['today_stars'])?>★</strong>
+      </div>
+      <?php if ($todayActivities): ?>
+        <div class="today-list">
+          <?php foreach ($todayActivities as $activity): ?>
+            <div class="today-item">
+              <span class="history-icon"><?=h(get_activity_icon($activity))?></span>
+              <div>
+                <b><?=h($activity['title'])?></b>
+                <div class="muted"><?=h($activityCategories[$activity['category'] ?? 'other'] ?? 'Khác')?> · <?=h(format_activity_datetime($activity['created_at'] ?? ''))?></div>
+                <?php if (!empty($activity['note'])): ?><div class="today-note"><?=h($activity['note'])?></div><?php endif; ?>
+              </div>
+              <div class="today-stars <?= $activity['stars']<0?'danger':'positive' ?>"><?=($activity['stars']>0?'+':'').h($activity['stars'])?>★</div>
+              <?php if ($activity['image_path']): ?><a href="<?=h($activity['image_path'])?>" target="_blank"><img class="photo small-photo" src="<?=h($activity['image_path'])?>"></a><?php endif; ?>
+            </div>
           <?php endforeach; ?>
         </div>
-        <p><b>Thời gian màn hình</b>
-          <select name="screen_minutes">
-            <?php foreach ($penaltyOptions as $min=>$item): [$text,$star] = $item; ?>
-              <option value="<?=h($min)?>"><?=h($text)?><?= $star ? ' ('.h($star).'★)' : '' ?></option>
-            <?php endforeach; ?>
-          </select>
-        </p>
-        <p><b>Ảnh minh chứng</b><input type="file" name="image" accept="image/*"><span class="muted">Ảnh sẽ gắn với mục đầu tiên được chọn.</span></p>
-        <p><b>Ghi chú</b><textarea name="note" placeholder="Ví dụ: Đọc 20 trang, vẽ cây lan, giúp mẹ rửa bát..."></textarea></p>
-        <button class="btn green">Lưu thành tích</button>
-      </form>
+      <?php else: ?>
+        <div class="empty-state">Chưa có thành tích nào được ghi nhận hôm nay.</div>
+      <?php endif; ?>
     </div>
 
     <div class="card">
