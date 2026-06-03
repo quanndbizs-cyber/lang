@@ -15,7 +15,7 @@ function handle_request(PDO $db, array $config): void
         handle_add_single($db, $config);
     }
     if ($action === 'add_reward') {
-        handle_add_reward($db);
+        handle_add_reward($db, $config);
     }
     if ($action === 'add_quick_action') {
         handle_add_quick_action($db, $config);
@@ -79,17 +79,30 @@ function handle_add_single(PDO $db, array $config): void
     redirect_home();
 }
 
-function handle_add_reward(PDO $db): void
+function handle_add_reward(PDO $db, array $config): void
 {
     $date = $_POST['reward_date'] ?: date('Y-m-d');
     $title = trim($_POST['reward_title'] ?? '');
-    $cost = (int) ($_POST['cost'] ?? 0);
+    $rewardOptions = $config['reward_options'];
+    $cost = (int) ($rewardOptions[$title] ?? 0);
     $note = trim($_POST['reward_note'] ?? '');
 
-    if ($title !== '' && $cost > 0) {
-        insert_reward($db, $date, $title, $cost, $note);
-        $_SESSION['msg'] = 'Đã đổi thưởng.';
+    if ($title === '' || $cost <= 0) {
+        $_SESSION['msg'] = 'Vui lòng chọn phần thưởng hợp lệ.';
+        redirect_home();
     }
+
+    $activityTotals = fetch_activity_totals($db);
+    $currentStars = $activityTotals['total_earned'] - fetch_total_spent($db);
+
+    if ($currentStars < $cost) {
+        $missingStars = $cost - $currentStars;
+        $_SESSION['msg'] = "Chưa đủ sao để đổi {$title}. Cần thêm {$missingStars}★ nữa.";
+        redirect_home();
+    }
+
+    insert_reward($db, $date, $title, $cost, $note);
+    $_SESSION['msg'] = "Đã đổi {$title} và trừ {$cost}★.";
 
     redirect_home();
 }

@@ -123,13 +123,14 @@ $rewards = fetch_rewards($db);
 
     <div class="card no-print">
       <h2>🎁 Đổi thưởng</h2>
+      <div class="notice reward-balance">Bạn đang có <b><?=h($dashboard['current_stars'])?>★</b> để đổi thưởng.</div>
       <form method="post">
         <input type="hidden" name="action" value="add_reward">
         <p><b>Ngày đổi</b><input type="date" name="reward_date" value="<?=date('Y-m-d')?>"></p>
         <p><b>Phần thưởng</b><select name="reward_title" id="rewardSelect">
           <?php foreach ($rewardOptions as $name=>$cost): ?><option value="<?=h($name)?>" data-cost="<?=h($cost)?>"><?=h($name)?> (<?=h($cost)?>★)</option><?php endforeach; ?>
         </select></p>
-        <p><b>Số sao dùng</b><input type="number" name="cost" id="costInput" value="20"></p>
+        <p><b>Số sao dùng</b><input type="number" name="cost" id="costInput" value="20" readonly></p>
         <p><b>Ghi chú</b><textarea name="reward_note" placeholder="Ví dụ: đổi truyện Doraemon..."></textarea></p>
         <button class="btn blue">Đổi thưởng</button>
       </form>
