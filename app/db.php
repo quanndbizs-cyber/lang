@@ -51,6 +51,10 @@ function initialize_database(PDO $db): void
     if (!in_array('parent_comment', $columnNames, true)) {
         $db->exec("ALTER TABLE activities ADD COLUMN parent_comment TEXT");
     }
+    if (!in_array('created_at', $columnNames, true)) {
+        $db->exec("ALTER TABLE activities ADD COLUMN created_at TEXT");
+        $db->exec("UPDATE activities SET created_at = activity_date || ' 00:00:00' WHERE created_at IS NULL OR created_at = ''");
+    }
 
     $db->exec(
         "CREATE TABLE IF NOT EXISTS rewards (
@@ -179,7 +183,7 @@ function fetch_total_spent(PDO $db): int
 
 function fetch_activities(PDO $db, int $limit = 30): array
 {
-    $stmt = $db->prepare('SELECT * FROM activities ORDER BY activity_date DESC, id DESC LIMIT ?');
+    $stmt = $db->prepare('SELECT * FROM activities ORDER BY activity_date DESC, created_at DESC, id DESC LIMIT ?');
     $stmt->bindValue(1, $limit, PDO::PARAM_INT);
     $stmt->execute();
 

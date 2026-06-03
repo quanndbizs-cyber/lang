@@ -57,6 +57,20 @@ function sanitize_activity_category(string $category, array $config): string
     return isset($config['activity_categories'][$category]) ? $category : 'other';
 }
 
+function format_activity_datetime(?string $datetime): string
+{
+    if (!$datetime) {
+        return '';
+    }
+
+    $timestamp = strtotime($datetime);
+    if ($timestamp === false) {
+        return $datetime;
+    }
+
+    return date('d/m/Y H:i', $timestamp);
+}
+
 function get_activity_icon(array $activity): string
 {
     if ((int) ($activity['stars'] ?? 0) < 0) {

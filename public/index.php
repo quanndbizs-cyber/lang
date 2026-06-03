@@ -178,11 +178,12 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
 
   <div class="card" style="margin-top:18px">
     <h2>📅 Lịch sử thành tích</h2>
-    <div class="table-wrap"><table class="table"><tr><th>Ngày</th><th>Icon</th><th>Loại</th><th>Hoạt động</th><th>Sao</th><th>Ghi chú</th><th>Ảnh</th><th>Phản hồi bố mẹ</th><th class="no-print"></th></tr>
+    <div class="table-wrap"><table class="table"><tr><th>Ngày áp dụng</th><th>Thời gian ghi nhận</th><th>Icon</th><th>Loại</th><th>Hoạt động</th><th>Sao</th><th>Ghi chú</th><th>Ảnh</th><th>Phản hồi bố mẹ</th><th class="no-print"></th></tr>
       <?php foreach ($activities as $a): ?>
         <?php $feedbackText = ((int) ($a['parent_liked'] ?? 0) === 1 ? '❤️ ' : '') . ($a['parent_comment'] ?? ''); ?>
         <tr>
           <td><?=h($a['activity_date'])?></td>
+          <td><?=h(format_activity_datetime($a['created_at'] ?? ''))?></td>
           <td><span class="history-icon"><?=h(get_activity_icon($a))?></span></td>
           <td><span class="badge"><?=h($activityCategories[$a['category'] ?? 'other'] ?? 'Khác')?></span></td>
           <td><?=h($a['title'])?></td>
