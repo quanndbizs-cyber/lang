@@ -16,6 +16,25 @@ function sanitize_activity_category(string $category, array $config): string
     return isset($config['activity_categories'][$category]) ? $category : 'other';
 }
 
+function get_activity_icon(array $activity): string
+{
+    if ((int) ($activity['stars'] ?? 0) < 0) {
+        return '⚠️';
+    }
+
+    return match ($activity['category'] ?? 'other') {
+        'study' => '📚',
+        'reading' => '📖',
+        'writing' => '✍️',
+        'exercise' => '🏃',
+        'creative' => '🎨',
+        'housework' => '🧹',
+        'plant_fish' => '🌱',
+        'bonus' => '⭐',
+        default => '✨',
+    };
+}
+
 function save_uploaded_image(string $field, array $config): ?string
 {
     if (empty($_FILES[$field]['name']) || !is_uploaded_file($_FILES[$field]['tmp_name'])) {

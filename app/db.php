@@ -129,7 +129,7 @@ function fetch_total_spent(PDO $db): int
     return (int) $db->query('SELECT COALESCE(SUM(cost), 0) FROM rewards')->fetchColumn();
 }
 
-function fetch_activities(PDO $db, int $limit = 80): array
+function fetch_activities(PDO $db, int $limit = 30): array
 {
     $stmt = $db->prepare('SELECT * FROM activities ORDER BY activity_date DESC, id DESC LIMIT ?');
     $stmt->bindValue(1, $limit, PDO::PARAM_INT);
