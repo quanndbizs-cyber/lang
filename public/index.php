@@ -72,28 +72,29 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
     <div class="muted" style="margin-top:8px">Còn thiếu <?=h($dashboard['missing_stars'])?>★ để chạm mốc thưởng tiếp theo.</div>
   </div>
 
-  <div class="card no-print quick-card" style="margin-top:18px">
+  <form class="card no-print quick-card" style="margin-top:18px" method="post" enctype="multipart/form-data" data-quick-form>
+    <input type="hidden" name="action" value="add_quick_action">
     <div class="quick-head">
       <h2>⚡ Ghi nhanh trong 1 chạm</h2>
       <div class="quick-date">
         <label for="quickDate"><b>Ngày áp dụng</b></label>
-        <input type="date" id="quickDate" value="<?=date('Y-m-d')?>">
+        <input type="date" id="quickDate" name="quick_date" value="<?=date('Y-m-d')?>">
       </div>
+    </div>
+    <div class="quick-proof">
+      <label for="quickImage"><b>Ảnh minh chứng</b></label>
+      <input type="file" id="quickImage" name="quick_image" accept="image/jpeg,image/png,image/webp">
+      <span class="muted">Nếu chưa chọn ảnh, hệ thống vẫn lưu và sẽ cảnh báo chưa upload ảnh minh chứng.</span>
     </div>
     <div class="quick-grid">
       <?php foreach ($quickActions as $key => $quickAction): [$label, $stars] = $quickAction; ?>
-      <form method="post">
-        <input type="hidden" name="action" value="add_quick_action">
-        <input type="hidden" name="quick_action" value="<?=h($key)?>">
-        <input type="hidden" name="quick_date" value="<?=date('Y-m-d')?>" data-quick-date>
-        <button class="quick-btn <?= $stars < 0 ? 'danger' : 'good' ?>" type="submit">
+        <button class="quick-btn <?= $stars < 0 ? 'danger' : 'good' ?>" type="submit" name="quick_action" value="<?=h($key)?>">
           <span><?=h($label)?></span>
           <strong><?=($stars > 0 ? '+' : '').h($stars)?>★</strong>
         </button>
-      </form>
       <?php endforeach; ?>
     </div>
-  </div>
+  </form>
 
   <div class="grid">
     <div class="card no-print">
@@ -227,8 +228,8 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
 <script>
 const rewardSelect=document.getElementById('rewardSelect'), costInput=document.getElementById('costInput');
 if(rewardSelect){function syncReward(){costInput.value=rewardSelect.options[rewardSelect.selectedIndex].dataset.cost} rewardSelect.addEventListener('change',syncReward); syncReward();}
-const quickDate=document.getElementById('quickDate');
-if(quickDate){function syncQuickDates(){document.querySelectorAll('[data-quick-date]').forEach((input)=>{input.value=quickDate.value;});} quickDate.addEventListener('change',syncQuickDates); syncQuickDates();}
+const quickForm=document.querySelector('[data-quick-form]');
+if(quickForm){quickForm.addEventListener('submit',(event)=>{const image=quickForm.querySelector('input[name="quick_image"]');if(image&&image.files.length===0&&!confirm('Bạn chưa upload ảnh minh chứng. Vẫn lưu ghi nhanh?')){event.preventDefault();}});}
 document.querySelectorAll('[data-parent-feedback]').forEach((form)=>{
   const checkbox=form.querySelector('input[name="parent_liked"]');
   const status=form.querySelector('[data-feedback-status]');

@@ -150,6 +150,7 @@ function handle_add_quick_action(PDO $db, array $config): void
 {
     $quickActionKey = $_POST['quick_action'] ?? '';
     $date = $_POST['quick_date'] ?: date('Y-m-d');
+    $imagePath = save_uploaded_image('quick_image', $config);
 
     if (!isset($config['quick_actions'][$quickActionKey])) {
         $_SESSION['msg'] = 'Không tìm thấy hành động nhanh.';
@@ -157,11 +158,14 @@ function handle_add_quick_action(PDO $db, array $config): void
     }
 
     [$title, $stars, $category] = $config['quick_actions'][$quickActionKey] + [null, null, 'other'];
-    $activityId = insert_activity($db, $date, $title, $category, $stars, '', null);
+    $activityId = insert_activity($db, $date, $title, $category, $stars, '', $imagePath);
     insert_audit_log($db, 'Gia đình', 'created', 'activity', $activityId, "Ghi nhanh {$title} ({$stars}★) ngày {$date}.");
 
     $sign = $stars > 0 ? '+' : '';
     $_SESSION['msg'] = "Đã ghi nhanh {$title} ({$sign}{$stars}★).";
+    if ($imagePath === null) {
+        $_SESSION['msg'] .= ' Lưu ý: chưa upload ảnh minh chứng.';
+    }
 
     redirect_home();
 }
