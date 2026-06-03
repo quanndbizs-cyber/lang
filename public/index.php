@@ -24,6 +24,7 @@ $dashboard = build_dashboard_stats(
 );
 $activities = fetch_activities($db);
 $rewards = fetch_rewards($db);
+$auditLogs = fetch_audit_logs($db);
 ?>
 <!doctype html>
 <html lang="vi">
@@ -168,6 +169,13 @@ $rewards = fetch_rewards($db);
     <h2>🎁 Lịch sử đổi thưởng</h2>
     <div class="table-wrap"><table class="table"><tr><th>Ngày</th><th>Phần thưởng</th><th>Sao dùng</th><th>Ghi chú</th><th class="no-print"></th></tr>
       <?php foreach ($rewards as $r): ?><tr><td><?=h($r['reward_date'])?></td><td><?=h($r['title'])?></td><td><b class="danger">-<?=h($r['cost'])?>★</b></td><td><?=h($r['note'])?></td><td class="no-print"><form method="post" onsubmit="return confirm('Xóa phần thưởng này?')"><input type="hidden" name="action" value="delete_reward"><input type="hidden" name="id" value="<?=h($r['id'])?>"><button class="btn small red">Xóa</button></form></td></tr><?php endforeach; ?>
+    </table></div>
+  </div>
+
+  <div class="card parent-audit" style="margin-top:18px">
+    <h2>🧾 Nhật ký audit cho bố mẹ</h2>
+    <div class="table-wrap"><table class="table"><tr><th>Thời gian</th><th>Người thực hiện</th><th>Hành động</th><th>Loại</th><th>Nội dung</th></tr>
+      <?php foreach ($auditLogs as $log): ?><tr><td><?=h($log['created_at'])?></td><td><?=h($log['actor'])?></td><td><span class="badge"><?=h($log['action'])?></span></td><td><?=h($log['entity_type'])?></td><td><?=h($log['description'])?></td></tr><?php endforeach; ?>
     </table></div>
   </div>
   <div class="footer">Con làm được! ⭐ Cố gắng mỗi ngày nhé! 🐰</div>

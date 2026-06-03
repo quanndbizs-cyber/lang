@@ -42,7 +42,8 @@ function handle_add_daily(PDO $db, array $config): void
         }
 
         [$title, $stars, $category] = $config['activity_options'][$key] + [null, null, 'other'];
-        insert_activity($db, $date, $title, $category, $stars, $note, $imagePath);
+        $activityId = insert_activity($db, $date, $title, $category, $stars, $note, $imagePath);
+        insert_audit_log($db, 'Gia đình', 'created', 'activity', $activityId, "Thêm hoạt động {$title} ({$stars}★) ngày {$date}.");
         $count++;
         $total += $stars;
         $imagePath = null;
@@ -51,7 +52,8 @@ function handle_add_daily(PDO $db, array $config): void
     $screen = (int) ($_POST['screen_minutes'] ?? 0);
     if (isset($config['penalty_options'][$screen]) && $config['penalty_options'][$screen][1] !== 0) {
         [$title, $stars, $category] = $config['penalty_options'][$screen] + [null, null, 'screen_penalty'];
-        insert_activity($db, $date, $title, $category, $stars, $note, $imagePath);
+        $activityId = insert_activity($db, $date, $title, $category, $stars, $note, $imagePath);
+        insert_audit_log($db, 'Gia đình', 'created', 'activity', $activityId, "Thêm hoạt động {$title} ({$stars}★) ngày {$date}.");
         $count++;
         $total += $stars;
     }
@@ -70,7 +72,8 @@ function handle_add_single(PDO $db, array $config): void
     $imagePath = save_uploaded_image('single_image', $config);
 
     if ($title !== '') {
-        insert_activity($db, $date, $title, $category, $stars, $note, $imagePath);
+        $activityId = insert_activity($db, $date, $title, $category, $stars, $note, $imagePath);
+        insert_audit_log($db, 'Gia đình', 'created', 'activity', $activityId, "Thêm hoạt động {$title} ({$stars}★) ngày {$date}.");
         $_SESSION['msg'] = 'Đã ghi nhận mục bổ sung.';
     } else {
         $_SESSION['msg'] = 'Vui lòng nhập tên hoạt động.';
@@ -101,7 +104,8 @@ function handle_add_reward(PDO $db, array $config): void
         redirect_home();
     }
 
-    insert_reward($db, $date, $title, $cost, $note);
+    $rewardId = insert_reward($db, $date, $title, $cost, $note);
+    insert_audit_log($db, 'Gia đình', 'created', 'reward', $rewardId, "Đổi thưởng {$title} (-{$cost}★) ngày {$date}.");
     $_SESSION['msg'] = "Đã đổi {$title} và trừ {$cost}★.";
 
     redirect_home();
@@ -118,7 +122,8 @@ function handle_add_quick_action(PDO $db, array $config): void
     }
 
     [$title, $stars, $category] = $config['quick_actions'][$quickActionKey] + [null, null, 'other'];
-    insert_activity($db, $date, $title, $category, $stars, '', null);
+    $activityId = insert_activity($db, $date, $title, $category, $stars, '', null);
+    insert_audit_log($db, 'Gia đình', 'created', 'activity', $activityId, "Ghi nhanh {$title} ({$stars}★) ngày {$date}.");
 
     $sign = $stars > 0 ? '+' : '';
     $_SESSION['msg'] = "Đã ghi nhanh {$title} ({$sign}{$stars}★).";
@@ -129,19 +134,27 @@ function handle_add_quick_action(PDO $db, array $config): void
 function handle_delete_activity(PDO $db): void
 {
     $id = (int) ($_POST['id'] ?? 0);
-    $imagePath = find_activity_image_path($db, $id);
+    $activity = find_activity($db, $id);
+    $imagePath = $activity['image_path'] ?? null;
 
     if ($imagePath) {
         @unlink(__DIR__ . '/../public/' . $imagePath);
     }
 
     delete_activity($db, $id);
+    if ($activity) {
+        insert_audit_log($db, 'Gia đình', 'deleted', 'activity', $id, "Xóa hoạt động {$activity['title']} ({$activity['stars']}★) ngày {$activity['activity_date']}.");
+    }
     redirect_home();
 }
 
 function handle_delete_reward(PDO $db): void
 {
     $id = (int) ($_POST['id'] ?? 0);
+    $reward = find_reward($db, $id);
     delete_reward($db, $id);
+    if ($reward) {
+        insert_audit_log($db, 'Gia đình', 'deleted', 'reward', $id, "Xóa đổi thưởng {$reward['title']} (-{$reward['cost']}★) ngày {$reward['reward_date']}.");
+    }
     redirect_home();
 }

@@ -56,6 +56,18 @@ function initialize_database(PDO $db): void
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )"
     );
+
+    $db->exec(
+        "CREATE TABLE IF NOT EXISTS audit_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            actor TEXT NOT NULL,
+            action TEXT NOT NULL,
+            entity_type TEXT NOT NULL,
+            entity_id INTEGER,
+            description TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )"
+    );
 }
 
 function insert_activity(
@@ -66,18 +78,22 @@ function insert_activity(
     int $stars,
     string $note,
     ?string $imagePath
-): void
+): int
 {
     $stmt = $db->prepare(
         'INSERT INTO activities(activity_date, title, category, stars, note, image_path, status) VALUES(?, ?, ?, ?, ?, ?, ?)'
     );
     $stmt->execute([$date, $title, $category, $stars, $note, $imagePath, 'approved']);
+
+    return (int) $db->lastInsertId();
 }
 
-function insert_reward(PDO $db, string $date, string $title, int $cost, string $note): void
+function insert_reward(PDO $db, string $date, string $title, int $cost, string $note): int
 {
     $stmt = $db->prepare('INSERT INTO rewards(reward_date, title, cost, note) VALUES(?, ?, ?, ?)');
     $stmt->execute([$date, $title, $cost, $note]);
+
+    return (int) $db->lastInsertId();
 }
 
 function find_activity_image_path(PDO $db, int $id): ?string
@@ -88,6 +104,26 @@ function find_activity_image_path(PDO $db, int $id): ?string
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
     return $row['image_path'] ?? null;
+}
+
+function find_activity(PDO $db, int $id): ?array
+{
+    $stmt = $db->prepare('SELECT * FROM activities WHERE id = ?');
+    $stmt->execute([$id]);
+
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    return $row ?: null;
+}
+
+function find_reward(PDO $db, int $id): ?array
+{
+    $stmt = $db->prepare('SELECT * FROM rewards WHERE id = ?');
+    $stmt->execute([$id]);
+
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    return $row ?: null;
 }
 
 function delete_activity(PDO $db, int $id): void
@@ -141,6 +177,30 @@ function fetch_activities(PDO $db, int $limit = 30): array
 function fetch_rewards(PDO $db, int $limit = 30): array
 {
     $stmt = $db->prepare('SELECT * FROM rewards ORDER BY reward_date DESC, id DESC LIMIT ?');
+    $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+    $stmt->execute();
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function insert_audit_log(
+    PDO $db,
+    string $actor,
+    string $action,
+    string $entityType,
+    ?int $entityId,
+    string $description
+): void
+{
+    $stmt = $db->prepare(
+        'INSERT INTO audit_logs(actor, action, entity_type, entity_id, description) VALUES(?, ?, ?, ?, ?)'
+    );
+    $stmt->execute([$actor, $action, $entityType, $entityId, $description]);
+}
+
+function fetch_audit_logs(PDO $db, int $limit = 50): array
+{
+    $stmt = $db->prepare('SELECT * FROM audit_logs ORDER BY id DESC LIMIT ?');
     $stmt->bindValue(1, $limit, PDO::PARAM_INT);
     $stmt->execute();
 
