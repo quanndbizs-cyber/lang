@@ -12,6 +12,7 @@ $db = connect_database($config);
 handle_request($db, $config);
 
 $activityOptions = $config['activity_options'];
+$activityCategories = $config['activity_categories'];
 $penaltyOptions = $config['penalty_options'];
 $quickActions = $config['quick_actions'];
 $rewardOptions = $config['reward_options'];
@@ -62,7 +63,7 @@ $rewards = fetch_rewards($db);
       </div>
     </div>
     <div class="quick-grid">
-      <?php foreach ($quickActions as $key => [$label, $stars]): ?>
+      <?php foreach ($quickActions as $key => $quickAction): [$label, $stars] = $quickAction; ?>
       <form method="post">
         <input type="hidden" name="action" value="add_quick_action">
         <input type="hidden" name="quick_action" value="<?=h($key)?>">
@@ -135,23 +136,30 @@ $rewards = fetch_rewards($db);
     </div>
 
     <div class="card no-print">
-      <h2>➕ Ghi mục đặc biệt</h2>
+      <h2>➕ Thêm hoạt động nâng cao</h2>
       <form method="post" enctype="multipart/form-data">
         <input type="hidden" name="action" value="add_single">
         <p><b>Ngày</b><input type="date" name="single_date" value="<?=date('Y-m-d')?>"></p>
-        <p><b>Tên hoạt động</b><input name="single_title" placeholder="Ví dụ: Đọc xong 1 cuốn sách"></p>
-        <p><b>Sao</b><input type="number" name="single_stars" value="5"></p>
-        <p><b>Ảnh</b><input type="file" name="single_image" accept="image/*"></p>
+        <p><b>Hoạt động</b><input name="single_title" placeholder="Ví dụ: Đọc xong 1 cuốn sách" required></p>
+        <div class="form-row">
+          <p><b>Loại hoạt động</b><select name="single_category">
+            <?php foreach ($activityCategories as $key => $label): ?>
+              <option value="<?=h($key)?>"><?=h($label)?></option>
+            <?php endforeach; ?>
+          </select></p>
+          <p><b>Sao</b><input type="number" name="single_stars" value="5"></p>
+        </div>
+        <p><b>Ảnh minh chứng</b><input type="file" name="single_image" accept="image/jpeg,image/png,image/webp"></p>
         <p><b>Ghi chú</b><textarea name="single_note"></textarea></p>
-        <button class="btn">Lưu mục đặc biệt</button>
+        <button class="btn">Lưu hoạt động</button>
       </form>
     </div>
   </div>
 
   <div class="card" style="margin-top:18px">
     <h2>📅 Lịch sử thành tích</h2>
-    <div class="table-wrap"><table class="table"><tr><th>Ngày</th><th>Hoạt động</th><th>Sao</th><th>Ghi chú</th><th>Ảnh</th><th class="no-print"></th></tr>
-      <?php foreach ($activities as $a): ?><tr><td><?=h($a['activity_date'])?></td><td><?=h($a['title'])?></td><td><b class="<?= $a['stars']<0?'star minus':'positive' ?>"><?=($a['stars']>0?'+':'').h($a['stars'])?>★</b></td><td><?=h($a['note'])?></td><td><?php if ($a['image_path']): ?><a href="<?=h($a['image_path'])?>" target="_blank"><img class="photo" src="<?=h($a['image_path'])?>"></a><?php endif; ?></td><td class="no-print"><form method="post" onsubmit="return confirm('Xóa dòng này?')"><input type="hidden" name="action" value="delete_activity"><input type="hidden" name="id" value="<?=h($a['id'])?>"><button class="btn small red">Xóa</button></form></td></tr><?php endforeach; ?>
+    <div class="table-wrap"><table class="table"><tr><th>Ngày</th><th>Loại</th><th>Hoạt động</th><th>Sao</th><th>Ghi chú</th><th>Ảnh</th><th class="no-print"></th></tr>
+      <?php foreach ($activities as $a): ?><tr><td><?=h($a['activity_date'])?></td><td><span class="badge"><?=h($activityCategories[$a['category'] ?? 'other'] ?? 'Khác')?></span></td><td><?=h($a['title'])?></td><td><b class="<?= $a['stars']<0?'star minus':'positive' ?>"><?=($a['stars']>0?'+':'').h($a['stars'])?>★</b></td><td><?=h($a['note'])?></td><td><?php if ($a['image_path']): ?><a href="<?=h($a['image_path'])?>" target="_blank"><img class="photo" src="<?=h($a['image_path'])?>"></a><?php endif; ?></td><td class="no-print"><form method="post" onsubmit="return confirm('Xóa dòng này?')"><input type="hidden" name="action" value="delete_activity"><input type="hidden" name="id" value="<?=h($a['id'])?>"><button class="btn small red">Xóa</button></form></td></tr><?php endforeach; ?>
     </table></div>
   </div>
 

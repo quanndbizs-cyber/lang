@@ -41,8 +41,8 @@ function handle_add_daily(PDO $db, array $config): void
             continue;
         }
 
-        [$title, $stars] = $config['activity_options'][$key];
-        insert_activity($db, $date, $title, $stars, $note, $imagePath);
+        [$title, $stars, $category] = $config['activity_options'][$key] + [null, null, 'other'];
+        insert_activity($db, $date, $title, $category, $stars, $note, $imagePath);
         $count++;
         $total += $stars;
         $imagePath = null;
@@ -50,8 +50,8 @@ function handle_add_daily(PDO $db, array $config): void
 
     $screen = (int) ($_POST['screen_minutes'] ?? 0);
     if (isset($config['penalty_options'][$screen]) && $config['penalty_options'][$screen][1] !== 0) {
-        [$title, $stars] = $config['penalty_options'][$screen];
-        insert_activity($db, $date, $title, $stars, $note, $imagePath);
+        [$title, $stars, $category] = $config['penalty_options'][$screen] + [null, null, 'screen_penalty'];
+        insert_activity($db, $date, $title, $category, $stars, $note, $imagePath);
         $count++;
         $total += $stars;
     }
@@ -64,13 +64,16 @@ function handle_add_single(PDO $db, array $config): void
 {
     $date = $_POST['single_date'] ?: date('Y-m-d');
     $title = trim($_POST['single_title'] ?? '');
+    $category = sanitize_activity_category($_POST['single_category'] ?? 'other', $config);
     $stars = (int) ($_POST['single_stars'] ?? 0);
     $note = trim($_POST['single_note'] ?? '');
     $imagePath = save_uploaded_image('single_image', $config);
 
     if ($title !== '') {
-        insert_activity($db, $date, $title, $stars, $note, $imagePath);
+        insert_activity($db, $date, $title, $category, $stars, $note, $imagePath);
         $_SESSION['msg'] = 'Đã ghi nhận mục bổ sung.';
+    } else {
+        $_SESSION['msg'] = 'Vui lòng nhập tên hoạt động.';
     }
 
     redirect_home();
@@ -101,8 +104,8 @@ function handle_add_quick_action(PDO $db, array $config): void
         redirect_home();
     }
 
-    [$title, $stars] = $config['quick_actions'][$quickActionKey];
-    insert_activity($db, $date, $title, $stars, '', null);
+    [$title, $stars, $category] = $config['quick_actions'][$quickActionKey] + [null, null, 'other'];
+    insert_activity($db, $date, $title, $category, $stars, '', null);
 
     $sign = $stars > 0 ? '+' : '';
     $_SESSION['msg'] = "Đã ghi nhanh {$title} ({$sign}{$stars}★).";

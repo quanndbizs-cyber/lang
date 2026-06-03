@@ -18,5 +18,6 @@ body{margin:0;font-family:Arial,"Segoe UI",sans-serif;background:linear-gradient
 .quick-btn.danger{background:linear-gradient(135deg,#ffd7b8,#ffd4de)}
 .quick-btn:hover{transform:translateY(-1px);box-shadow:0 10px 22px #0002}
 .quick-btn:active{transform:translateY(0)}
-@media(max-width:850px){.grid,.stat-grid,.two-col,.quick-grid,.quick-head{grid-template-columns:1fr}.quick-head{display:grid}.quick-date{display:grid;gap:6px}.quick-date input{min-width:0}.quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:32px}.hero:before,.hero:after{font-size:28px}.stars{font-size:34px}.wrap{padding:10px}.card{padding:14px}}
+.form-row{display:grid;grid-template-columns:1fr 130px;gap:12px}
+@media(max-width:850px){.grid,.stat-grid,.two-col,.quick-grid,.quick-head,.form-row{grid-template-columns:1fr}.quick-head{display:grid}.quick-date{display:grid;gap:6px}.quick-date input{min-width:0}.quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:32px}.hero:before,.hero:after{font-size:28px}.stars{font-size:34px}.wrap{padding:10px}.card{padding:14px}}
 @media print{.no-print{display:none}.wrap{max-width:none}.grid{grid-template-columns:1fr 1fr}.card{break-inside:avoid}body{background:white}.hero{box-shadow:none}.table-wrap{overflow:visible}}

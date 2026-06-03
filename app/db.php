@@ -31,6 +31,7 @@ function initialize_database(PDO $db): void
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             activity_date TEXT NOT NULL,
             title TEXT NOT NULL,
+            category TEXT NOT NULL DEFAULT 'other',
             stars INTEGER NOT NULL,
             note TEXT,
             image_path TEXT,
@@ -38,6 +39,12 @@ function initialize_database(PDO $db): void
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )"
     );
+
+    $columns = $db->query('PRAGMA table_info(activities)')->fetchAll(PDO::FETCH_ASSOC);
+    $columnNames = array_column($columns, 'name');
+    if (!in_array('category', $columnNames, true)) {
+        $db->exec("ALTER TABLE activities ADD COLUMN category TEXT NOT NULL DEFAULT 'other'");
+    }
 
     $db->exec(
         "CREATE TABLE IF NOT EXISTS rewards (
@@ -51,12 +58,20 @@ function initialize_database(PDO $db): void
     );
 }
 
-function insert_activity(PDO $db, string $date, string $title, int $stars, string $note, ?string $imagePath): void
+function insert_activity(
+    PDO $db,
+    string $date,
+    string $title,
+    string $category,
+    int $stars,
+    string $note,
+    ?string $imagePath
+): void
 {
     $stmt = $db->prepare(
-        'INSERT INTO activities(activity_date, title, stars, note, image_path, status) VALUES(?, ?, ?, ?, ?, ?)'
+        'INSERT INTO activities(activity_date, title, category, stars, note, image_path, status) VALUES(?, ?, ?, ?, ?, ?, ?)'
     );
-    $stmt->execute([$date, $title, $stars, $note, $imagePath, 'approved']);
+    $stmt->execute([$date, $title, $category, $stars, $note, $imagePath, 'approved']);
 }
 
 function insert_reward(PDO $db, string $date, string $title, int $cost, string $note): void

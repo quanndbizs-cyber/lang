@@ -11,6 +11,11 @@ function redirect_home(): void
     exit;
 }
 
+function sanitize_activity_category(string $category, array $config): string
+{
+    return isset($config['activity_categories'][$category]) ? $category : 'other';
+}
+
 function save_uploaded_image(string $field, array $config): ?string
 {
     if (empty($_FILES[$field]['name']) || !is_uploaded_file($_FILES[$field]['tmp_name'])) {
