@@ -17,6 +17,7 @@ $penaltyOptions = $config['penalty_options'];
 $rewardOptions = $config['reward_options'];
 $parentLoggedIn = is_parent_logged_in();
 $parentReviewStatusOptions = parent_review_status_options();
+$appVersion = $config['app_version'] ?? '1.0.0';
 
 $dashboard = build_dashboard_stats(
     fetch_activity_totals($db),
@@ -270,7 +271,7 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
       <?php foreach ($auditLogs as $log): ?><tr><td><?=h($log['created_at'])?></td><td><?=h($log['actor'])?></td><td><span class="badge"><?=h($log['action'])?></span></td><td><?=h($log['entity_type'])?></td><td><?=h($log['description'])?></td></tr><?php endforeach; ?>
     </table></div>
   </div><?php endif; ?>
-  <div class="footer">Con làm được! ⭐ Cố gắng mỗi ngày nhé! 🐰</div>
+  <div class="footer">Con làm được! ⭐ Cố gắng mỗi ngày nhé! 🐰 <span class="app-version">v<?=h($appVersion)?></span></div>
 </div>
 <div class="image-modal" data-image-modal hidden>
   <button class="image-modal-close" type="button" data-image-modal-close aria-label="Đóng preview ảnh">×</button>
