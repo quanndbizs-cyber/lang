@@ -35,7 +35,7 @@ function handle_request(PDO $db, array $config): void
     }
     if ($action === 'update_activity_parent_feedback') {
         require_parent_login();
-        handle_update_activity_parent_feedback($db);
+        handle_update_activity_parent_feedback($db, $config);
     }
     if ($action === 'delete_reward') {
         require_parent_login();
@@ -274,7 +274,7 @@ function handle_delete_activity(PDO $db): void
     redirect_home();
 }
 
-function handle_update_activity_parent_feedback(PDO $db): void
+function handle_update_activity_parent_feedback(PDO $db, array $config): void
 {
     $id = (int) ($_POST['id'] ?? 0);
     $liked = isset($_POST['parent_liked']);
@@ -298,6 +298,12 @@ function handle_update_activity_parent_feedback(PDO $db): void
     insert_audit_log($db, 'Bố mẹ', 'updated', 'activity', $id, "Cập nhật phản hồi và trạng thái " . get_parent_review_status_label($status) . " cho hoạt động {$activity['title']}.");
 
     if (is_ajax_request()) {
+        $dashboard = build_dashboard_stats(
+            fetch_activity_totals($db),
+            fetch_total_spent($db),
+            $config['reward_options']
+        );
+
         json_response([
             'ok' => true,
             'message' => 'Đã lưu phản hồi của bố mẹ.',
@@ -307,6 +313,7 @@ function handle_update_activity_parent_feedback(PDO $db): void
             'status' => $status,
             'status_label' => get_parent_review_status_label($status),
             'display_text' => ($liked ? '❤️ ' : '') . $comment,
+            'dashboard' => $dashboard,
         ]);
     }
 
