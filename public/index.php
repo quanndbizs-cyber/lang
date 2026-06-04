@@ -14,9 +14,9 @@ handle_request($db, $config);
 $activityOptions = $config['activity_options'];
 $activityCategories = $config['activity_categories'];
 $penaltyOptions = $config['penalty_options'];
-$quickActions = $config['quick_actions'];
 $rewardOptions = $config['reward_options'];
 $parentLoggedIn = is_parent_logged_in();
+$parentReviewStatusOptions = parent_review_status_options();
 
 $dashboard = build_dashboard_stats(
     fetch_activity_totals($db),
@@ -24,6 +24,7 @@ $dashboard = build_dashboard_stats(
     $rewardOptions
 );
 $activities = fetch_activities($db);
+$todayActivities = fetch_today_activities($db);
 $rewards = fetch_rewards($db);
 $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
 ?>
@@ -72,51 +73,85 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
     <div class="muted" style="margin-top:8px">Còn thiếu <?=h($dashboard['missing_stars'])?>★ để chạm mốc thưởng tiếp theo.</div>
   </div>
 
-  <div class="card no-print quick-card" style="margin-top:18px">
+  <form class="card no-print quick-card" style="margin-top:18px" method="post" enctype="multipart/form-data" data-quick-form>
+    <input type="hidden" name="action" value="add_quick_action">
     <div class="quick-head">
       <h2>⚡ Ghi nhanh trong 1 chạm</h2>
       <div class="quick-date">
         <label for="quickDate"><b>Ngày áp dụng</b></label>
-        <input type="date" id="quickDate" value="<?=date('Y-m-d')?>">
+        <input type="date" id="quickDate" name="quick_date" value="<?=date('Y-m-d')?>" min="<?=date('Y-m-d')?>" max="<?=date('Y-m-d')?>">
       </div>
     </div>
-    <div class="quick-grid">
-      <?php foreach ($quickActions as $key => $quickAction): [$label, $stars] = $quickAction; ?>
-      <form method="post">
-        <input type="hidden" name="action" value="add_quick_action">
-        <input type="hidden" name="quick_action" value="<?=h($key)?>">
-        <input type="hidden" name="quick_date" value="<?=date('Y-m-d')?>" data-quick-date>
-        <button class="quick-btn <?= $stars < 0 ? 'danger' : 'good' ?>" type="submit">
-          <span><?=h($label)?></span>
-          <strong><?=($stars > 0 ? '+' : '').h($stars)?>★</strong>
-        </button>
-      </form>
-      <?php endforeach; ?>
+    <div class="quick-fields">
+      <p>
+        <b>Loại hoạt động</b>
+        <select name="quick_activity_category" data-quick-category>
+          <?php foreach ($activityCategories as $key => $label): ?>
+            <?php if ($key === 'screen_penalty'): continue; endif; ?>
+            <option value="<?=h($key)?>"><?=h($label)?></option>
+          <?php endforeach; ?>
+        </select>
+      </p>
+      <p>
+        <b>Hoạt động cụ thể</b>
+        <select name="quick_activity_option" data-quick-activity>
+          <option value="">Chọn hoạt động</option>
+          <?php foreach ($activityOptions as $key => $option): [$label, $stars, $category] = $option + [null, null, 'other']; ?>
+            <option value="<?=h($key)?>" data-category="<?=h($category)?>"><?=h($label)?> (<?=($stars > 0 ? '+' : '').h($stars)?>★)</option>
+          <?php endforeach; ?>
+        </select>
+      </p>
+      <p>
+        <b>Trừ sao nếu có</b>
+        <select name="penalty_activity">
+          <?php foreach ($penaltyOptions as $minutes => $option): [$label, $stars] = $option + [null, 0]; ?>
+            <option value="<?=h($minutes)?>"><?=h($label)?><?= $stars !== 0 ? ' (' . ($stars > 0 ? '+' : '') . h($stars) . '★)' : '' ?></option>
+          <?php endforeach; ?>
+        </select>
+      </p>
     </div>
-  </div>
+    <div class="quick-proof">
+      <label for="quickImage"><b>Ảnh minh chứng</b></label>
+      <input type="file" id="quickImage" name="quick_image" accept="image/jpeg,image/png,image/webp" required>
+      <span class="muted">Bắt buộc upload ảnh minh chứng trước khi lưu ghi nhanh.</span>
+    </div>
+    <p><b>Ghi chú</b><textarea name="quick_note" placeholder="Ví dụ: con tự hoàn thành trước giờ ăn tối..."></textarea></p>
+    <button class="btn green">Lưu ghi nhanh</button>
+  </form>
 
   <div class="grid">
-    <div class="card no-print">
+    <div class="card today-card">
       <h2>✅ Ghi nhận thành tích hôm nay</h2>
-      <form method="post" enctype="multipart/form-data">
-        <input type="hidden" name="action" value="add_daily">
-        <p><b>Ngày</b><input type="date" name="activity_date" value="<?=date('Y-m-d')?>"></p>
-        <div class="activities">
-          <?php foreach ($activityOptions as $key=>$item): [$text,$star] = $item; ?>
-          <div class="rowline"><label><input type="checkbox" name="activities[]" value="<?=h($key)?>"><?=h($text)?></label><div class="star">+<?=h($star)?>★</div></div>
+      <div class="today-summary">
+        <div>Hôm nay <b><?=h(date('d/m/Y'))?></b></div>
+        <strong><?=h($dashboard['today_stars'])?>★</strong>
+      </div>
+      <?php if ($todayActivities): ?>
+        <div class="today-list">
+          <?php foreach ($todayActivities as $activity): ?>
+            <div class="today-item">
+              <span class="history-icon"><?=h(get_activity_icon($activity))?></span>
+              <div>
+                <b><?=h($activity['title'])?></b>
+                <div class="muted"><?=h($activityCategories[$activity['category'] ?? 'other'] ?? 'Khác')?> · <?=h(format_activity_datetime($activity['created_at'] ?? ''))?></div>
+                <span class="review-status status-<?=h(sanitize_parent_review_status($activity['status'] ?? 'pending'))?>"><?=h(get_parent_review_status_label($activity['status'] ?? 'pending'))?></span>
+                <?php if (!empty($activity['note'])): ?><div class="today-note"><?=h($activity['note'])?></div><?php endif; ?>
+              </div>
+              <div class="today-stars <?= $activity['stars']<0?'danger':'positive' ?>"><?=($activity['stars']>0?'+':'').h($activity['stars'])?>★</div>
+              <?php if ($activity['image_path']): ?><a href="<?=h($activity['image_path'])?>" data-image-preview><img class="photo small-photo" src="<?=h($activity['image_path'])?>" alt="Ảnh minh chứng"></a><?php endif; ?>
+              <form class="child-edit-form no-print" method="post">
+                <input type="hidden" name="action" value="update_child_activity">
+                <input type="hidden" name="id" value="<?=h($activity['id'])?>">
+                <input name="child_title" value="<?=h($activity['title'])?>" required>
+                <textarea name="child_note" placeholder="Ghi chú"><?=h($activity['note'] ?? '')?></textarea>
+                <button class="btn small blue">Sửa task</button>
+              </form>
+            </div>
           <?php endforeach; ?>
         </div>
-        <p><b>Thời gian màn hình</b>
-          <select name="screen_minutes">
-            <?php foreach ($penaltyOptions as $min=>$item): [$text,$star] = $item; ?>
-              <option value="<?=h($min)?>"><?=h($text)?><?= $star ? ' ('.h($star).'★)' : '' ?></option>
-            <?php endforeach; ?>
-          </select>
-        </p>
-        <p><b>Ảnh minh chứng</b><input type="file" name="image" accept="image/*"><span class="muted">Ảnh sẽ gắn với mục đầu tiên được chọn.</span></p>
-        <p><b>Ghi chú</b><textarea name="note" placeholder="Ví dụ: Đọc 20 trang, vẽ cây lan, giúp mẹ rửa bát..."></textarea></p>
-        <button class="btn green">Lưu thành tích</button>
-      </form>
+      <?php else: ?>
+        <div class="empty-state">Chưa có thành tích nào được ghi nhận hôm nay.</div>
+      <?php endif; ?>
     </div>
 
     <div class="card">
@@ -144,7 +179,7 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
       <div class="notice reward-balance">Bạn đang có <b><?=h($dashboard['current_stars'])?>★</b> để đổi thưởng.</div>
       <form method="post">
         <input type="hidden" name="action" value="add_reward">
-        <p><b>Ngày đổi</b><input type="date" name="reward_date" value="<?=date('Y-m-d')?>"></p>
+        <p><b>Ngày đổi</b><input type="date" name="reward_date" value="<?=date('Y-m-d')?>" min="<?=date('Y-m-d')?>" max="<?=date('Y-m-d')?>"></p>
         <p><b>Phần thưởng</b><select name="reward_title" id="rewardSelect">
           <?php foreach ($rewardOptions as $name=>$cost): ?><option value="<?=h($name)?>" data-cost="<?=h($cost)?>"><?=h($name)?> (<?=h($cost)?>★)</option><?php endforeach; ?>
         </select></p>
@@ -158,7 +193,7 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
       <h2>➕ Thêm hoạt động nâng cao</h2>
       <form method="post" enctype="multipart/form-data">
         <input type="hidden" name="action" value="add_single">
-        <p><b>Ngày</b><input type="date" name="single_date" value="<?=date('Y-m-d')?>"></p>
+        <p><b>Ngày</b><input type="date" name="single_date" value="<?=date('Y-m-d')?>" min="<?=date('Y-m-d')?>" max="<?=date('Y-m-d')?>"></p>
         <p><b>Hoạt động</b><input name="single_title" placeholder="Ví dụ: Đọc xong 1 cuốn sách" required></p>
         <div class="form-row">
           <p><b>Loại hoạt động</b><select name="single_category">
@@ -177,22 +212,35 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
 
   <div class="card" style="margin-top:18px">
     <h2>📅 Lịch sử thành tích</h2>
-    <div class="table-wrap"><table class="table"><tr><th>Ngày</th><th>Icon</th><th>Loại</th><th>Hoạt động</th><th>Sao</th><th>Ghi chú</th><th>Ảnh</th><th>Phản hồi bố mẹ</th><th class="no-print"></th></tr>
+    <div class="table-wrap"><table class="table history-table"><tr><th>Ngày áp dụng</th><th class="mobile-hide">Thời gian ghi nhận</th><th class="mobile-hide">Icon</th><th class="mobile-hide">Loại</th><th>Hoạt động</th><th>Sao</th><th class="mobile-hide">Ghi chú</th><th>Ảnh</th><th class="mobile-hide">Phản hồi bố mẹ</th><th class="no-print mobile-hide"></th></tr>
       <?php foreach ($activities as $a): ?>
         <?php $feedbackText = ((int) ($a['parent_liked'] ?? 0) === 1 ? '❤️ ' : '') . ($a['parent_comment'] ?? ''); ?>
         <tr>
           <td><?=h($a['activity_date'])?></td>
-          <td><span class="history-icon"><?=h(get_activity_icon($a))?></span></td>
-          <td><span class="badge"><?=h($activityCategories[$a['category'] ?? 'other'] ?? 'Khác')?></span></td>
-          <td><?=h($a['title'])?></td>
-          <td><b class="<?= $a['stars']<0?'star minus':'positive' ?>"><?=($a['stars']>0?'+':'').h($a['stars'])?>★</b></td>
-          <td><?=h($a['note'])?></td>
-          <td><?php if ($a['image_path']): ?><a href="<?=h($a['image_path'])?>" target="_blank"><img class="photo" src="<?=h($a['image_path'])?>"></a><?php endif; ?></td>
+          <td class="mobile-hide"><?=h(format_activity_datetime($a['created_at'] ?? ''))?></td>
+          <td class="mobile-hide"><span class="history-icon"><?=h(get_activity_icon($a))?></span></td>
+          <td class="mobile-hide"><span class="badge"><?=h($activityCategories[$a['category'] ?? 'other'] ?? 'Khác')?></span></td>
           <td>
+            <b><?=h($a['title'])?></b>
+            <div class="history-mobile-meta">
+              <?=h(format_activity_datetime($a['created_at'] ?? ''))?> · <?=h($activityCategories[$a['category'] ?? 'other'] ?? 'Khác')?>
+              <?php if (!empty($a['note'])): ?><br><?=h($a['note'])?><?php endif; ?>
+            </div>
+            <span class="review-status status-<?=h(sanitize_parent_review_status($a['status'] ?? 'pending'))?>" data-status-display><?=h(get_parent_review_status_label($a['status'] ?? 'pending'))?></span>
+          </td>
+          <td><b class="<?= $a['stars']<0?'star minus':'positive' ?>"><?=($a['stars']>0?'+':'').h($a['stars'])?>★</b></td>
+          <td class="mobile-hide"><?=h($a['note'])?></td>
+          <td><?php if ($a['image_path']): ?><a href="<?=h($a['image_path'])?>" data-image-preview><img class="photo" src="<?=h($a['image_path'])?>" alt="Ảnh minh chứng"></a><?php endif; ?></td>
+          <td class="mobile-hide">
             <?php if ($parentLoggedIn): ?>
               <form class="parent-feedback no-print" method="post" data-parent-feedback>
                 <input type="hidden" name="action" value="update_activity_parent_feedback">
                 <input type="hidden" name="id" value="<?=h($a['id'])?>">
+                <select name="parent_status">
+                  <?php foreach ($parentReviewStatusOptions as $status => $label): ?>
+                    <option value="<?=h($status)?>" <?=sanitize_parent_review_status($a['status'] ?? 'pending') === $status ? 'selected' : ''?>><?=h($label)?></option>
+                  <?php endforeach; ?>
+                </select>
                 <label class="like-toggle"><input type="checkbox" name="parent_liked" value="1" <?=((int) ($a['parent_liked'] ?? 0) === 1) ? 'checked' : ''?>> ❤️ Like</label>
                 <textarea name="parent_comment" placeholder="Bố mẹ nhận xét..."><?=h($a['parent_comment'] ?? '')?></textarea>
                 <div class="parent-feedback-actions"><button class="btn small blue">Lưu</button><span class="muted" data-feedback-status></span></div>
@@ -203,7 +251,7 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
             <div class="print-feedback parent-feedback-text" data-feedback-print><?=h($feedbackText)?></div>
             <div class="parent-feedback-text no-print" data-feedback-display><?=h($feedbackText)?></div>
           </td>
-          <td class="no-print"><?php if ($parentLoggedIn): ?><form method="post" onsubmit="return confirm('Xóa dòng này?')"><input type="hidden" name="action" value="delete_activity"><input type="hidden" name="id" value="<?=h($a['id'])?>"><button class="btn small red">Xóa</button></form><?php else: ?><span class="muted">Cần login</span><?php endif; ?></td>
+          <td class="no-print mobile-hide"><?php if ($parentLoggedIn): ?><form method="post" onsubmit="return confirm('Xóa dòng này?')"><input type="hidden" name="action" value="delete_activity"><input type="hidden" name="id" value="<?=h($a['id'])?>"><button class="btn small red">Xóa</button></form><?php else: ?><span class="muted">Cần login</span><?php endif; ?></td>
         </tr>
       <?php endforeach; ?>
     </table></div>
@@ -224,16 +272,52 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
   </div><?php endif; ?>
   <div class="footer">Con làm được! ⭐ Cố gắng mỗi ngày nhé! 🐰</div>
 </div>
+<div class="image-modal" data-image-modal hidden>
+  <button class="image-modal-close" type="button" data-image-modal-close aria-label="Đóng preview ảnh">×</button>
+  <img src="" alt="Ảnh minh chứng phóng to" data-image-modal-img>
+</div>
 <script>
 const rewardSelect=document.getElementById('rewardSelect'), costInput=document.getElementById('costInput');
 if(rewardSelect){function syncReward(){costInput.value=rewardSelect.options[rewardSelect.selectedIndex].dataset.cost} rewardSelect.addEventListener('change',syncReward); syncReward();}
-const quickDate=document.getElementById('quickDate');
-if(quickDate){function syncQuickDates(){document.querySelectorAll('[data-quick-date]').forEach((input)=>{input.value=quickDate.value;});} quickDate.addEventListener('change',syncQuickDates); syncQuickDates();}
+const quickForm=document.querySelector('[data-quick-form]');
+if(quickForm){
+  const categorySelect=quickForm.querySelector('[data-quick-category]');
+  const activitySelect=quickForm.querySelector('[data-quick-activity]');
+  const activityOptions=activitySelect?Array.from(activitySelect.options):[];
+
+  function syncQuickActivities(){
+    if(!categorySelect||!activitySelect){return;}
+    const selectedCategory=categorySelect.value;
+    let firstVisible='';
+    activityOptions.forEach((option)=>{
+      const category=option.dataset.category||'';
+      const visible=option.value===''||category===selectedCategory;
+      option.hidden=!visible;
+      option.disabled=!visible;
+      if(visible&&option.value!==''&&firstVisible===''){firstVisible=option.value;}
+    });
+    if(activitySelect.selectedOptions.length&&activitySelect.selectedOptions[0].disabled){
+      activitySelect.value=firstVisible;
+    }
+  }
+
+  if(categorySelect){categorySelect.addEventListener('change',syncQuickActivities);}
+  syncQuickActivities();
+
+  quickForm.addEventListener('submit',(event)=>{
+    const image=quickForm.querySelector('input[name="quick_image"]');
+    if(image&&image.files.length===0){
+      event.preventDefault();
+      alert('Ghi nhanh cần có ảnh minh chứng. Vui lòng upload ảnh trước khi lưu.');
+    }
+  });
+}
 document.querySelectorAll('[data-parent-feedback]').forEach((form)=>{
   const checkbox=form.querySelector('input[name="parent_liked"]');
   const status=form.querySelector('[data-feedback-status]');
   const display=form.parentElement.querySelector('[data-feedback-display]');
   const printDisplay=form.parentElement.querySelector('[data-feedback-print]');
+  const statusDisplay=form.closest('tr')?.querySelector('[data-status-display]');
   let saveSeq=0;
 
   async function saveFeedback(){
@@ -252,6 +336,10 @@ document.querySelectorAll('[data-parent-feedback]').forEach((form)=>{
       if(!response.ok||!payload.ok){throw new Error(payload.message||'Không lưu được phản hồi.');}
       if(display){display.textContent=payload.display_text;}
       if(printDisplay){printDisplay.textContent=payload.display_text;}
+      if(statusDisplay){
+        statusDisplay.textContent=payload.status_label;
+        statusDisplay.className='review-status status-'+payload.status;
+      }
       if(status){status.textContent='Đã lưu';}
     }catch(error){
       if(currentSeq!==saveSeq){return;}
@@ -266,6 +354,29 @@ document.querySelectorAll('[data-parent-feedback]').forEach((form)=>{
     saveFeedback();
   });
   if(checkbox){checkbox.addEventListener('change',saveFeedback);}
+  const parentStatus=form.querySelector('select[name="parent_status"]');
+  if(parentStatus){parentStatus.addEventListener('change',saveFeedback);}
 });
+const imageModal=document.querySelector('[data-image-modal]');
+const imageModalImg=document.querySelector('[data-image-modal-img]');
+const imageModalClose=document.querySelector('[data-image-modal-close]');
+function closeImageModal(){
+  if(!imageModal||!imageModalImg){return;}
+  imageModal.hidden=true;
+  imageModalImg.src='';
+}
+document.querySelectorAll('[data-image-preview]').forEach((link)=>{
+  link.addEventListener('click',(event)=>{
+    event.preventDefault();
+    if(!imageModal||!imageModalImg){return;}
+    imageModalImg.src=link.href;
+    imageModal.hidden=false;
+  });
+});
+if(imageModalClose){imageModalClose.addEventListener('click',closeImageModal);}
+if(imageModal){
+  imageModal.addEventListener('click',(event)=>{if(event.target===imageModal){closeImageModal();}});
+  document.addEventListener('keydown',(event)=>{if(event.key==='Escape'&&!imageModal.hidden){closeImageModal();}});
+}
 </script>
 </body></html>

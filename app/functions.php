@@ -57,6 +57,83 @@ function sanitize_activity_category(string $category, array $config): string
     return isset($config['activity_categories'][$category]) ? $category : 'other';
 }
 
+function parent_review_status_options(): array
+{
+    return [
+        'pending' => 'Chờ duyệt',
+        'ng' => 'NG',
+        'ok' => 'OK',
+        'good' => 'Good',
+        'excellent' => 'Excellent',
+    ];
+}
+
+function sanitize_parent_review_status(string $status): string
+{
+    $status = strtolower(trim($status));
+
+    return array_key_exists($status, parent_review_status_options()) ? $status : 'pending';
+}
+
+function get_parent_review_status_label(?string $status): string
+{
+    $status = sanitize_parent_review_status((string) $status);
+    $options = parent_review_status_options();
+
+    return $options[$status];
+}
+
+function format_activity_datetime(?string $datetime): string
+{
+    if (!$datetime) {
+        return '';
+    }
+
+    $timestamp = strtotime($datetime);
+    if ($timestamp === false) {
+        return $datetime;
+    }
+
+    return date('d/m/Y H:i', $timestamp);
+}
+
+function require_today_date(?string $date, string $fieldLabel = 'ngày chọn'): string
+{
+    $date = trim((string) $date);
+    $today = date('Y-m-d');
+
+    if ($date === '') {
+        return $today;
+    }
+
+    $parsed = DateTimeImmutable::createFromFormat('!Y-m-d', $date);
+    if (!$parsed || $parsed->format('Y-m-d') !== $date) {
+        $_SESSION['msg'] = "Vui lòng chọn {$fieldLabel} hợp lệ.";
+        redirect_home();
+    }
+
+    if ($date !== $today) {
+        $_SESSION['msg'] = "Không thể lưu {$fieldLabel} trước hoặc sau ngày hiện tại.";
+        redirect_home();
+    }
+
+    return $date;
+}
+
+function ensure_activity_daily_limit(PDO $db, string $date, int $newActivityCount, int $maxActivities = 12): void
+{
+    if ($newActivityCount <= 0) {
+        return;
+    }
+
+    $currentCount = count_activities_by_date($db, $date);
+    if ($currentCount + $newActivityCount > $maxActivities) {
+        $remaining = max(0, $maxActivities - $currentCount);
+        $_SESSION['msg'] = "Một ngày chỉ được ghi tối đa {$maxActivities} hoạt động. Hôm nay còn có thể thêm {$remaining} hoạt động.";
+        redirect_home();
+    }
+}
+
 function get_activity_icon(array $activity): string
 {
     if ((int) ($activity['stars'] ?? 0) < 0) {
