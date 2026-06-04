@@ -31,6 +31,11 @@ body{margin:0;font-family:Arial,"Segoe UI",sans-serif;background:linear-gradient
 .parent-login-form{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
 .inline-notice{margin:0}
 .parent-feedback-text{margin-top:6px;font-weight:bold;color:#455a64}
+.audit-details summary{cursor:pointer;font-size:24px;font-weight:bold;color:#0b74d1;list-style:none}
+.audit-details summary::-webkit-details-marker{display:none}
+.audit-details summary:before{content:"▸";display:inline-block;margin-right:8px;transition:transform .15s ease}
+.audit-details[open] summary{margin-bottom:12px}
+.audit-details[open] summary:before{transform:rotate(90deg)}
 .app-version{display:block;margin-top:6px;color:#607d8b;font-size:13px;font-weight:700}
 .history-mobile-meta{display:none;color:#607d8b;font-size:12px;font-weight:400;margin-top:4px;line-height:1.35}
 .image-modal{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:18px}
