@@ -131,6 +131,7 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
       <?php if ($todayActivities): ?>
         <div class="today-list">
           <?php foreach ($todayActivities as $activity): ?>
+            <?php $countedStars = get_counted_activity_stars($activity); ?>
             <div class="today-item">
               <span class="history-icon"><?=h(get_activity_icon($activity))?></span>
               <div>
@@ -139,7 +140,10 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
                 <span class="review-status status-<?=h(sanitize_parent_review_status($activity['status'] ?? 'pending'))?>"><?=h(get_parent_review_status_label($activity['status'] ?? 'pending'))?></span>
                 <?php if (!empty($activity['note'])): ?><div class="today-note"><?=h($activity['note'])?></div><?php endif; ?>
               </div>
-              <div class="today-stars <?= $activity['stars']<0?'danger':'positive' ?>"><?=($activity['stars']>0?'+':'').h($activity['stars'])?>★</div>
+              <div class="today-stars <?= $countedStars<0?'danger':'positive' ?>">
+                <span data-activity-star-display data-activity-id="<?=h($activity['id'])?>" data-original-stars="<?=h($activity['stars'])?>"><?=h(format_star_delta($countedStars))?></span>
+                <div class="muted" data-activity-star-note data-activity-id="<?=h($activity['id'])?>"><?=($countedStars !== (int) $activity['stars']) ? 'NG: không tính ' . h(format_star_delta((int) $activity['stars'])) : ''?></div>
+              </div>
               <?php if ($activity['image_path']): ?><a href="<?=h(public_url($activity['image_path'], $publicBasePath))?>" data-image-preview><img class="photo small-photo" src="<?=h(public_url($activity['image_path'], $publicBasePath))?>" alt="Ảnh minh chứng"></a><?php endif; ?>
               <form class="child-edit-form no-print" method="post">
                 <input type="hidden" name="action" value="update_child_activity">
@@ -217,6 +221,7 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
     <div class="table-wrap"><table class="table history-table"><tr><th>Ngày áp dụng</th><th class="mobile-hide">Thời gian ghi nhận</th><th class="mobile-hide">Icon</th><th class="mobile-hide">Loại</th><th>Hoạt động</th><th>Sao</th><th class="mobile-hide">Ghi chú</th><th>Ảnh</th><th class="mobile-hide">Phản hồi bố mẹ</th><th class="no-print mobile-hide"></th></tr>
       <?php foreach ($activities as $a): ?>
         <?php $feedbackText = ((int) ($a['parent_liked'] ?? 0) === 1 ? '❤️ ' : '') . ($a['parent_comment'] ?? ''); ?>
+        <?php $countedStars = get_counted_activity_stars($a); ?>
         <tr>
           <td><?=h($a['activity_date'])?></td>
           <td class="mobile-hide"><?=h(format_activity_datetime($a['created_at'] ?? ''))?></td>
@@ -230,7 +235,10 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
             </div>
             <span class="review-status status-<?=h(sanitize_parent_review_status($a['status'] ?? 'pending'))?>" data-status-display><?=h(get_parent_review_status_label($a['status'] ?? 'pending'))?></span>
           </td>
-          <td><b class="<?= $a['stars']<0?'star minus':'positive' ?>"><?=($a['stars']>0?'+':'').h($a['stars'])?>★</b></td>
+          <td>
+            <b class="<?= $countedStars<0?'star minus':'positive' ?>" data-activity-star-display data-activity-id="<?=h($a['id'])?>" data-original-stars="<?=h($a['stars'])?>"><?=h(format_star_delta($countedStars))?></b>
+            <div class="muted" data-activity-star-note data-activity-id="<?=h($a['id'])?>"><?=($countedStars !== (int) $a['stars']) ? 'NG: không tính ' . h(format_star_delta((int) $a['stars'])) : ''?></div>
+          </td>
           <td class="mobile-hide"><?=h($a['note'])?></td>
           <td><?php if ($a['image_path']): ?><a href="<?=h(public_url($a['image_path'], $publicBasePath))?>" data-image-preview><img class="photo" src="<?=h(public_url($a['image_path'], $publicBasePath))?>" alt="Ảnh minh chứng"></a><?php endif; ?></td>
           <td class="mobile-hide">
@@ -336,6 +344,27 @@ document.querySelectorAll('[data-parent-feedback]').forEach((form)=>{
     });
   }
 
+  function formatStars(stars){
+    return (stars>0?'+':'')+stars+'★';
+  }
+
+  function updateActivityStars(id,status){
+    document.querySelectorAll('[data-activity-star-display][data-activity-id="'+id+'"]').forEach((element)=>{
+      const originalStars=parseInt(element.dataset.originalStars||'0',10);
+      const countedStars=(status==='ng'&&originalStars>0)?0:originalStars;
+      element.textContent=formatStars(countedStars);
+      element.classList.toggle('star',countedStars<0);
+      element.classList.toggle('minus',countedStars<0);
+      element.classList.toggle('danger',countedStars<0);
+      element.classList.toggle('positive',countedStars>=0);
+    });
+    document.querySelectorAll('[data-activity-star-note][data-activity-id="'+id+'"]').forEach((element)=>{
+      const starDisplay=document.querySelector('[data-activity-star-display][data-activity-id="'+id+'"]');
+      const originalStars=parseInt(starDisplay?.dataset.originalStars||'0',10);
+      element.textContent=(status==='ng'&&originalStars>0)?'NG: không tính '+formatStars(originalStars):'';
+    });
+  }
+
   async function saveFeedback(){
     const currentSeq=++saveSeq;
     form.classList.add('is-saving');
@@ -357,6 +386,7 @@ document.querySelectorAll('[data-parent-feedback]').forEach((form)=>{
         statusDisplay.className='review-status status-'+payload.status;
       }
       updateDashboard(payload.dashboard);
+      updateActivityStars(payload.id,payload.status);
       if(status){status.textContent='Đã lưu';}
     }catch(error){
       if(currentSeq!==saveSeq){return;}
