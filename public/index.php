@@ -355,6 +355,10 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
   <button class="image-modal-close" type="button" data-image-modal-close aria-label="Đóng preview ảnh">×</button>
   <img src="" alt="Ảnh minh chứng phóng to" data-image-modal-img>
 </div>
+<div class="quick-scroll no-print" aria-label="Di chuyển nhanh">
+  <button type="button" class="quick-scroll-btn" data-scroll-target="top" aria-label="Lên đầu trang" title="Lên đầu trang">↑</button>
+  <button type="button" class="quick-scroll-btn" data-scroll-target="bottom" aria-label="Xuống cuối trang" title="Xuống cuối trang">↓</button>
+</div>
 <script>
 const rewardSelect=document.getElementById('rewardSelect'), costInput=document.getElementById('costInput');
 if(rewardSelect){function syncReward(){costInput.value=rewardSelect.options[rewardSelect.selectedIndex].dataset.cost} rewardSelect.addEventListener('change',syncReward); syncReward();}
@@ -508,6 +512,12 @@ document.addEventListener('keydown',(event)=>{
     event.preventDefault();
     window.scrollTo({top:document.documentElement.scrollHeight,behavior:'smooth'});
   }
+});
+document.querySelectorAll('[data-scroll-target]').forEach((button)=>{
+  button.addEventListener('click',()=>{
+    const top=button.dataset.scrollTarget==='top'?0:document.documentElement.scrollHeight;
+    window.scrollTo({top,behavior:'smooth'});
+  });
 });
 </script>
 </body></html>

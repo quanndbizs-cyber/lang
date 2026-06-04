@@ -45,6 +45,10 @@ body{margin:0;font-family:Arial,"Segoe UI",sans-serif;background:linear-gradient
 .image-modal[hidden]{display:none}
 .image-modal img{max-width:min(960px,100%);max-height:88vh;border-radius:14px;background:white;box-shadow:0 16px 48px #0008}
 .image-modal-close{position:fixed;top:14px;right:14px;width:42px;height:42px;border:0;border-radius:50%;background:white;color:#263238;font-size:30px;line-height:1;cursor:pointer;box-shadow:0 8px 24px #0005}
+.quick-scroll{position:fixed;right:16px;bottom:16px;z-index:900;display:grid;gap:8px}
+.quick-scroll-btn{width:46px;height:46px;border:0;border-radius:50%;background:#0b74d1;color:white;font-size:26px;font-weight:bold;line-height:1;cursor:pointer;box-shadow:0 8px 22px #0003}
+.quick-scroll-btn:hover{background:#095fa9}
+.quick-scroll-btn:focus-visible{outline:3px solid #ffd65a;outline-offset:3px}
 .today-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff7d6;border:2px dashed #ffd65a;border-radius:18px;padding:12px;margin-bottom:12px}
 .today-summary strong{font-size:28px;color:#ff9800}
 .today-list{display:grid;gap:10px}
