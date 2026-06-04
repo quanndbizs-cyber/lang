@@ -393,5 +393,22 @@ if(imageModal){
   imageModal.addEventListener('click',(event)=>{if(event.target===imageModal){closeImageModal();}});
   document.addEventListener('keydown',(event)=>{if(event.key==='Escape'&&!imageModal.hidden){closeImageModal();}});
 }
+document.addEventListener('keydown',(event)=>{
+  if(event.defaultPrevented||event.altKey||event.ctrlKey||event.metaKey||event.shiftKey){return;}
+  const target=event.target;
+  const isTypingTarget=target&&(
+    target.isContentEditable||
+    ['INPUT','TEXTAREA','SELECT'].includes(target.tagName)
+  );
+  if(isTypingTarget){return;}
+  if(event.key==='Home'){
+    event.preventDefault();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  if(event.key==='End'){
+    event.preventDefault();
+    window.scrollTo({top:document.documentElement.scrollHeight,behavior:'smooth'});
+  }
+});
 </script>
 </body></html>
