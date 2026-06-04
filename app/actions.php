@@ -279,6 +279,7 @@ function handle_update_activity_parent_feedback(PDO $db): void
     $id = (int) ($_POST['id'] ?? 0);
     $liked = isset($_POST['parent_liked']);
     $comment = trim($_POST['parent_comment'] ?? '');
+    $status = sanitize_parent_review_status($_POST['parent_status'] ?? 'pending');
     $activity = find_activity($db, $id);
 
     if (!$activity) {
@@ -293,8 +294,8 @@ function handle_update_activity_parent_feedback(PDO $db): void
         redirect_home();
     }
 
-    update_activity_parent_feedback($db, $id, $liked, $comment);
-    insert_audit_log($db, 'Bố mẹ', 'updated', 'activity', $id, "Cập nhật phản hồi cho hoạt động {$activity['title']}.");
+    update_activity_parent_feedback($db, $id, $liked, $comment, $status);
+    insert_audit_log($db, 'Bố mẹ', 'updated', 'activity', $id, "Cập nhật phản hồi và trạng thái " . get_parent_review_status_label($status) . " cho hoạt động {$activity['title']}.");
 
     if (is_ajax_request()) {
         json_response([
@@ -303,6 +304,8 @@ function handle_update_activity_parent_feedback(PDO $db): void
             'id' => $id,
             'liked' => $liked,
             'comment' => $comment,
+            'status' => $status,
+            'status_label' => get_parent_review_status_label($status),
             'display_text' => ($liked ? '❤️ ' : '') . $comment,
         ]);
     }

@@ -35,7 +35,7 @@ function initialize_database(PDO $db): void
             stars INTEGER NOT NULL,
             note TEXT,
             image_path TEXT,
-            status TEXT NOT NULL DEFAULT 'approved',
+            status TEXT NOT NULL DEFAULT 'pending',
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )"
     );
@@ -55,6 +55,10 @@ function initialize_database(PDO $db): void
         $db->exec("ALTER TABLE activities ADD COLUMN created_at TEXT");
         $db->exec("UPDATE activities SET created_at = activity_date || ' 00:00:00' WHERE created_at IS NULL OR created_at = ''");
     }
+    if (!in_array('status', $columnNames, true)) {
+        $db->exec("ALTER TABLE activities ADD COLUMN status TEXT NOT NULL DEFAULT 'pending'");
+    }
+    $db->exec("UPDATE activities SET status = 'ok' WHERE status = 'approved'");
 
     $db->exec(
         "CREATE TABLE IF NOT EXISTS rewards (
@@ -93,7 +97,7 @@ function insert_activity(
     $stmt = $db->prepare(
         'INSERT INTO activities(activity_date, title, category, stars, note, image_path, status) VALUES(?, ?, ?, ?, ?, ?, ?)'
     );
-    $stmt->execute([$date, $title, $category, $stars, $note, $imagePath, 'approved']);
+    $stmt->execute([$date, $title, $category, $stars, $note, $imagePath, 'pending']);
 
     return (int) $db->lastInsertId();
 }
@@ -156,10 +160,10 @@ function update_child_activity_content(PDO $db, int $id, string $title, string $
     $stmt->execute([$title, $note, $id]);
 }
 
-function update_activity_parent_feedback(PDO $db, int $id, bool $liked, string $comment): void
+function update_activity_parent_feedback(PDO $db, int $id, bool $liked, string $comment, string $status): void
 {
-    $stmt = $db->prepare('UPDATE activities SET parent_liked = ?, parent_comment = ? WHERE id = ?');
-    $stmt->execute([$liked ? 1 : 0, $comment, $id]);
+    $stmt = $db->prepare('UPDATE activities SET parent_liked = ?, parent_comment = ?, status = ? WHERE id = ?');
+    $stmt->execute([$liked ? 1 : 0, $comment, $status, $id]);
 }
 
 function delete_reward(PDO $db, int $id): void
@@ -177,7 +181,7 @@ function fetch_activity_totals(PDO $db): array
             COALESCE(SUM(CASE WHEN strftime('%Y-%W', activity_date) = strftime('%Y-%W', 'now', 'localtime') THEN stars ELSE 0 END), 0) AS week_stars,
             COALESCE(SUM(CASE WHEN substr(activity_date, 1, 7) = strftime('%Y-%m', 'now', 'localtime') THEN stars ELSE 0 END), 0) AS month_stars
         FROM activities
-        WHERE status = 'approved'
+        WHERE status IN ('ok', 'good', 'excellent')
     ";
 
     $row = $db->query($sql)->fetch(PDO::FETCH_ASSOC);

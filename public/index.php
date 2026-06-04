@@ -16,6 +16,7 @@ $activityCategories = $config['activity_categories'];
 $penaltyOptions = $config['penalty_options'];
 $rewardOptions = $config['reward_options'];
 $parentLoggedIn = is_parent_logged_in();
+$parentReviewStatusOptions = parent_review_status_options();
 
 $dashboard = build_dashboard_stats(
     fetch_activity_totals($db),
@@ -133,6 +134,7 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
               <div>
                 <b><?=h($activity['title'])?></b>
                 <div class="muted"><?=h($activityCategories[$activity['category'] ?? 'other'] ?? 'Khác')?> · <?=h(format_activity_datetime($activity['created_at'] ?? ''))?></div>
+                <span class="review-status status-<?=h(sanitize_parent_review_status($activity['status'] ?? 'pending'))?>"><?=h(get_parent_review_status_label($activity['status'] ?? 'pending'))?></span>
                 <?php if (!empty($activity['note'])): ?><div class="today-note"><?=h($activity['note'])?></div><?php endif; ?>
               </div>
               <div class="today-stars <?= $activity['stars']<0?'danger':'positive' ?>"><?=($activity['stars']>0?'+':'').h($activity['stars'])?>★</div>
@@ -224,6 +226,7 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
               <?=h(format_activity_datetime($a['created_at'] ?? ''))?> · <?=h($activityCategories[$a['category'] ?? 'other'] ?? 'Khác')?>
               <?php if (!empty($a['note'])): ?><br><?=h($a['note'])?><?php endif; ?>
             </div>
+            <span class="review-status status-<?=h(sanitize_parent_review_status($a['status'] ?? 'pending'))?>" data-status-display><?=h(get_parent_review_status_label($a['status'] ?? 'pending'))?></span>
           </td>
           <td><b class="<?= $a['stars']<0?'star minus':'positive' ?>"><?=($a['stars']>0?'+':'').h($a['stars'])?>★</b></td>
           <td class="mobile-hide"><?=h($a['note'])?></td>
@@ -233,6 +236,11 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
               <form class="parent-feedback no-print" method="post" data-parent-feedback>
                 <input type="hidden" name="action" value="update_activity_parent_feedback">
                 <input type="hidden" name="id" value="<?=h($a['id'])?>">
+                <select name="parent_status">
+                  <?php foreach ($parentReviewStatusOptions as $status => $label): ?>
+                    <option value="<?=h($status)?>" <?=sanitize_parent_review_status($a['status'] ?? 'pending') === $status ? 'selected' : ''?>><?=h($label)?></option>
+                  <?php endforeach; ?>
+                </select>
                 <label class="like-toggle"><input type="checkbox" name="parent_liked" value="1" <?=((int) ($a['parent_liked'] ?? 0) === 1) ? 'checked' : ''?>> ❤️ Like</label>
                 <textarea name="parent_comment" placeholder="Bố mẹ nhận xét..."><?=h($a['parent_comment'] ?? '')?></textarea>
                 <div class="parent-feedback-actions"><button class="btn small blue">Lưu</button><span class="muted" data-feedback-status></span></div>
@@ -309,6 +317,7 @@ document.querySelectorAll('[data-parent-feedback]').forEach((form)=>{
   const status=form.querySelector('[data-feedback-status]');
   const display=form.parentElement.querySelector('[data-feedback-display]');
   const printDisplay=form.parentElement.querySelector('[data-feedback-print]');
+  const statusDisplay=form.closest('tr')?.querySelector('[data-status-display]');
   let saveSeq=0;
 
   async function saveFeedback(){
@@ -327,6 +336,10 @@ document.querySelectorAll('[data-parent-feedback]').forEach((form)=>{
       if(!response.ok||!payload.ok){throw new Error(payload.message||'Không lưu được phản hồi.');}
       if(display){display.textContent=payload.display_text;}
       if(printDisplay){printDisplay.textContent=payload.display_text;}
+      if(statusDisplay){
+        statusDisplay.textContent=payload.status_label;
+        statusDisplay.className='review-status status-'+payload.status;
+      }
       if(status){status.textContent='Đã lưu';}
     }catch(error){
       if(currentSeq!==saveSeq){return;}
@@ -341,6 +354,8 @@ document.querySelectorAll('[data-parent-feedback]').forEach((form)=>{
     saveFeedback();
   });
   if(checkbox){checkbox.addEventListener('change',saveFeedback);}
+  const parentStatus=form.querySelector('select[name="parent_status"]');
+  if(parentStatus){parentStatus.addEventListener('change',saveFeedback);}
 });
 const imageModal=document.querySelector('[data-image-modal]');
 const imageModalImg=document.querySelector('[data-image-modal-img]');

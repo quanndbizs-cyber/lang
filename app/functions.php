@@ -57,6 +57,32 @@ function sanitize_activity_category(string $category, array $config): string
     return isset($config['activity_categories'][$category]) ? $category : 'other';
 }
 
+function parent_review_status_options(): array
+{
+    return [
+        'pending' => 'Chờ duyệt',
+        'ng' => 'NG',
+        'ok' => 'OK',
+        'good' => 'Good',
+        'excellent' => 'Excellent',
+    ];
+}
+
+function sanitize_parent_review_status(string $status): string
+{
+    $status = strtolower(trim($status));
+
+    return array_key_exists($status, parent_review_status_options()) ? $status : 'pending';
+}
+
+function get_parent_review_status_label(?string $status): string
+{
+    $status = sanitize_parent_review_status((string) $status);
+    $options = parent_review_status_options();
+
+    return $options[$status];
+}
+
 function format_activity_datetime(?string $datetime): string
 {
     if (!$datetime) {
