@@ -267,10 +267,12 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
   </div>
 
   <?php if ($parentLoggedIn): ?><div class="card parent-audit" style="margin-top:18px">
-    <h2>🧾 Nhật ký audit cho bố mẹ</h2>
-    <div class="table-wrap"><table class="table"><tr><th>Thời gian</th><th>Người thực hiện</th><th>Hành động</th><th>Loại</th><th>Nội dung</th></tr>
-      <?php foreach ($auditLogs as $log): ?><tr><td><?=h($log['created_at'])?></td><td><?=h($log['actor'])?></td><td><span class="badge"><?=h($log['action'])?></span></td><td><?=h($log['entity_type'])?></td><td><?=h($log['description'])?></td></tr><?php endforeach; ?>
-    </table></div>
+    <details class="audit-details">
+      <summary>🧾 Nhật ký audit cho bố mẹ <span class="muted">(<?=h(count($auditLogs))?> dòng gần nhất)</span></summary>
+      <div class="table-wrap"><table class="table"><tr><th>Thời gian</th><th>Người thực hiện</th><th>Hành động</th><th>Loại</th><th>Nội dung</th></tr>
+        <?php foreach ($auditLogs as $log): ?><tr><td><?=h($log['created_at'])?></td><td><?=h($log['actor'])?></td><td><span class="badge"><?=h($log['action'])?></span></td><td><?=h($log['entity_type'])?></td><td><?=h($log['description'])?></td></tr><?php endforeach; ?>
+      </table></div>
+    </details>
   </div><?php endif; ?>
   <div class="footer">Con làm được! ⭐ Cố gắng mỗi ngày nhé! 🐰 <span class="app-version">v<?=h($appVersion)?></span></div>
 </div>
