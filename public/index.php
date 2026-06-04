@@ -43,13 +43,13 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
     <h1>🌈 BẢNG SAO MÙA HÈ ⭐</h1>
     <div class="sub">Học tốt · Vui khỏe · Tự lập · Sáng tạo · Ít màn hình</div>
     <p>Mỗi ngày cố gắng hơn hôm qua một chút nhé!</p>
-    <div class="stars">Hiện có: <?=h($dashboard['current_stars'])?>★</div>
-    <div class="pill">Đã nhận: <?=h($dashboard['total_earned'])?>★</div><div class="pill">Đã đổi: <?=h($dashboard['total_spent'])?>★</div><div class="pill">Danh hiệu: <?=h($dashboard['level_name'])?></div>
+    <div class="stars">Hiện có: <span data-dashboard-value="current_stars" data-suffix="★"><?=h($dashboard['current_stars'])?>★</span></div>
+    <div class="pill">Đã nhận: <span data-dashboard-value="total_earned" data-suffix="★"><?=h($dashboard['total_earned'])?>★</span></div><div class="pill">Đã đổi: <span data-dashboard-value="total_spent" data-suffix="★"><?=h($dashboard['total_spent'])?>★</span></div><div class="pill">Danh hiệu: <span data-dashboard-value="level_name"><?=h($dashboard['level_name'])?></span></div>
     <div class="stat-grid">
-      <div class="stat">Tổng sao<b><?=h($dashboard['current_stars'])?>★</b></div>
-      <div class="stat">Hôm nay<b><?=h($dashboard['today_stars'])?>★</b></div>
-      <div class="stat">Tuần này<b><?=h($dashboard['week_stars'])?>★</b></div>
-      <div class="stat">Tháng này<b><?=h($dashboard['month_stars'])?>★</b></div>
+      <div class="stat">Tổng sao<b data-dashboard-value="current_stars" data-suffix="★"><?=h($dashboard['current_stars'])?>★</b></div>
+      <div class="stat">Hôm nay<b data-dashboard-value="today_stars" data-suffix="★"><?=h($dashboard['today_stars'])?>★</b></div>
+      <div class="stat">Tuần này<b data-dashboard-value="week_stars" data-suffix="★"><?=h($dashboard['week_stars'])?>★</b></div>
+      <div class="stat">Tháng này<b data-dashboard-value="month_stars" data-suffix="★"><?=h($dashboard['month_stars'])?>★</b></div>
     </div>
   </div>
   <?php if (!empty($_SESSION['msg'])): ?><div class="notice"><?=h($_SESSION['msg']); unset($_SESSION['msg']);?></div><?php endif; ?>
@@ -70,9 +70,9 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
     <?php endif; ?>
   </div>
   <div class="card" style="margin-top:18px">
-    <div class="two-col"><div><b>Phần thưởng gần đạt nhất: <?=h($dashboard['next_reward_title'])?> - <?=h($dashboard['next_reward_cost'])?>★</b></div><div style="text-align:right"><?=h($dashboard['current_stars'])?>/<?=h($dashboard['next_reward_cost'])?>★</div></div>
-    <div class="progress" style="margin-top:8px"><div class="progress-inner" style="width: <?=$dashboard['progress_percent']?>%"></div></div>
-    <div class="muted" style="margin-top:8px">Còn thiếu <?=h($dashboard['missing_stars'])?>★ để chạm mốc thưởng tiếp theo.</div>
+    <div class="two-col"><div><b>Phần thưởng gần đạt nhất: <span data-dashboard-value="next_reward_title"><?=h($dashboard['next_reward_title'])?></span> - <span data-dashboard-value="next_reward_cost" data-suffix="★"><?=h($dashboard['next_reward_cost'])?>★</span></b></div><div style="text-align:right"><span data-dashboard-value="current_stars"><?=h($dashboard['current_stars'])?></span>/<span data-dashboard-value="next_reward_cost" data-suffix="★"><?=h($dashboard['next_reward_cost'])?>★</span></div></div>
+    <div class="progress" style="margin-top:8px"><div class="progress-inner" data-dashboard-progress style="width: <?=$dashboard['progress_percent']?>%"></div></div>
+    <div class="muted" style="margin-top:8px">Còn thiếu <span data-dashboard-value="missing_stars" data-suffix="★"><?=h($dashboard['missing_stars'])?>★</span> để chạm mốc thưởng tiếp theo.</div>
   </div>
 
   <form class="card no-print quick-card" style="margin-top:18px" method="post" enctype="multipart/form-data" data-quick-form>
@@ -126,7 +126,7 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
       <h2>✅ Ghi nhận thành tích hôm nay</h2>
       <div class="today-summary">
         <div>Hôm nay <b><?=h(date('d/m/Y'))?></b></div>
-        <strong><?=h($dashboard['today_stars'])?>★</strong>
+        <strong data-dashboard-value="today_stars" data-suffix="★"><?=h($dashboard['today_stars'])?>★</strong>
       </div>
       <?php if ($todayActivities): ?>
         <div class="today-list">
@@ -178,7 +178,7 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
 
     <div class="card no-print">
       <h2>🎁 Đổi thưởng</h2>
-      <div class="notice reward-balance">Bạn đang có <b><?=h($dashboard['current_stars'])?>★</b> để đổi thưởng.</div>
+      <div class="notice reward-balance">Bạn đang có <b data-dashboard-value="current_stars" data-suffix="★"><?=h($dashboard['current_stars'])?>★</b> để đổi thưởng.</div>
       <form method="post">
         <input type="hidden" name="action" value="add_reward">
         <p><b>Ngày đổi</b><input type="date" name="reward_date" value="<?=date('Y-m-d')?>" min="<?=date('Y-m-d')?>" max="<?=date('Y-m-d')?>"></p>
@@ -322,6 +322,18 @@ document.querySelectorAll('[data-parent-feedback]').forEach((form)=>{
   const statusDisplay=form.closest('tr')?.querySelector('[data-status-display]');
   let saveSeq=0;
 
+  function updateDashboard(dashboard){
+    if(!dashboard){return;}
+    document.querySelectorAll('[data-dashboard-value]').forEach((element)=>{
+      const key=element.dataset.dashboardValue;
+      if(!Object.prototype.hasOwnProperty.call(dashboard,key)){return;}
+      element.textContent=String(dashboard[key])+(element.dataset.suffix||'');
+    });
+    document.querySelectorAll('[data-dashboard-progress]').forEach((element)=>{
+      element.style.width=dashboard.progress_percent+'%';
+    });
+  }
+
   async function saveFeedback(){
     const currentSeq=++saveSeq;
     form.classList.add('is-saving');
@@ -342,6 +354,7 @@ document.querySelectorAll('[data-parent-feedback]').forEach((form)=>{
         statusDisplay.textContent=payload.status_label;
         statusDisplay.className='review-status status-'+payload.status;
       }
+      updateDashboard(payload.dashboard);
       if(status){status.textContent='Đã lưu';}
     }catch(error){
       if(currentSeq!==saveSeq){return;}
