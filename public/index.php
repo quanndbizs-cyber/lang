@@ -137,6 +137,13 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
               </div>
               <div class="today-stars <?= $activity['stars']<0?'danger':'positive' ?>"><?=($activity['stars']>0?'+':'').h($activity['stars'])?>★</div>
               <?php if ($activity['image_path']): ?><a href="<?=h($activity['image_path'])?>" data-image-preview><img class="photo small-photo" src="<?=h($activity['image_path'])?>" alt="Ảnh minh chứng"></a><?php endif; ?>
+              <form class="child-edit-form no-print" method="post">
+                <input type="hidden" name="action" value="update_child_activity">
+                <input type="hidden" name="id" value="<?=h($activity['id'])?>">
+                <input name="child_title" value="<?=h($activity['title'])?>" required>
+                <textarea name="child_note" placeholder="Ghi chú"><?=h($activity['note'] ?? '')?></textarea>
+                <button class="btn small blue">Sửa task</button>
+              </form>
             </div>
           <?php endforeach; ?>
         </div>

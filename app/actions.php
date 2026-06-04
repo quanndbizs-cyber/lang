@@ -26,6 +26,9 @@ function handle_request(PDO $db, array $config): void
     if ($action === 'add_quick_action') {
         handle_add_quick_action($db, $config);
     }
+    if ($action === 'update_child_activity') {
+        handle_update_child_activity($db);
+    }
     if ($action === 'delete_activity') {
         require_parent_login();
         handle_delete_activity($db);
@@ -67,15 +70,25 @@ function handle_add_daily(PDO $db, array $config): void
 {
     $date = require_today_date($_POST['activity_date'] ?? '', 'ngày ghi nhận');
     $note = trim($_POST['note'] ?? '');
+    $selectedActivities = [];
+    foreach (($_POST['activities'] ?? []) as $key) {
+        if (isset($config['activity_options'][$key])) {
+            $selectedActivities[] = $key;
+        }
+    }
+
+    $screen = (int) ($_POST['screen_minutes'] ?? 0);
+    $newActivityCount = count($selectedActivities);
+    if (isset($config['penalty_options'][$screen]) && $config['penalty_options'][$screen][1] !== 0) {
+        $newActivityCount++;
+    }
+    ensure_activity_daily_limit($db, $date, $newActivityCount);
+
     $imagePath = save_uploaded_image('image', $config);
     $count = 0;
     $total = 0;
 
-    foreach (($_POST['activities'] ?? []) as $key) {
-        if (!isset($config['activity_options'][$key])) {
-            continue;
-        }
-
+    foreach ($selectedActivities as $key) {
         [$title, $stars, $category] = $config['activity_options'][$key] + [null, null, 'other'];
         $activityId = insert_activity($db, $date, $title, $category, $stars, $note, $imagePath);
         insert_audit_log($db, 'Gia đình', 'created', 'activity', $activityId, "Thêm hoạt động {$title} ({$stars}★) ngày {$date}.");
@@ -84,7 +97,6 @@ function handle_add_daily(PDO $db, array $config): void
         $imagePath = null;
     }
 
-    $screen = (int) ($_POST['screen_minutes'] ?? 0);
     if (isset($config['penalty_options'][$screen]) && $config['penalty_options'][$screen][1] !== 0) {
         [$title, $stars, $category] = $config['penalty_options'][$screen] + [null, null, 'screen_penalty'];
         $activityId = insert_activity($db, $date, $title, $category, $stars, $note, $imagePath);
@@ -104,9 +116,10 @@ function handle_add_single(PDO $db, array $config): void
     $category = sanitize_activity_category($_POST['single_category'] ?? 'other', $config);
     $stars = (int) ($_POST['single_stars'] ?? 0);
     $note = trim($_POST['single_note'] ?? '');
-    $imagePath = save_uploaded_image('single_image', $config);
 
     if ($title !== '') {
+        ensure_activity_daily_limit($db, $date, 1);
+        $imagePath = save_uploaded_image('single_image', $config);
         $activityId = insert_activity($db, $date, $title, $category, $stars, $note, $imagePath);
         insert_audit_log($db, 'Gia đình', 'created', 'activity', $activityId, "Thêm hoạt động {$title} ({$stars}★) ngày {$date}.");
         $_SESSION['msg'] = 'Đã ghi nhận mục bổ sung.';
@@ -153,6 +166,30 @@ function handle_add_quick_action(PDO $db, array $config): void
     $category = sanitize_activity_category($_POST['quick_activity_category'] ?? 'other', $config);
     $date = require_today_date($_POST['quick_date'] ?? '', 'ngày ghi nhanh');
     $note = trim($_POST['quick_note'] ?? '');
+    $newActivityCount = ($activityKey !== '') ? 1 : 0;
+    if ($penaltyKey !== 0) {
+        $newActivityCount++;
+    }
+
+    if ($activityKey !== '') {
+        if (!isset($config['activity_options'][$activityKey])) {
+            $_SESSION['msg'] = 'Không tìm thấy hoạt động đã chọn.';
+            redirect_home();
+        }
+
+        [, , $optionCategory] = $config['activity_options'][$activityKey] + [null, null, 'other'];
+        if ($optionCategory !== $category) {
+            $_SESSION['msg'] = 'Hoạt động không thuộc loại đã chọn.';
+            redirect_home();
+        }
+    }
+
+    if ($penaltyKey !== 0 && !isset($config['penalty_options'][$penaltyKey])) {
+        $_SESSION['msg'] = 'Không tìm thấy mục trừ sao đã chọn.';
+        redirect_home();
+    }
+
+    ensure_activity_daily_limit($db, $date, $newActivityCount);
 
     if (empty($_FILES['quick_image']['name']) || !is_uploaded_file($_FILES['quick_image']['tmp_name'])) {
         $_SESSION['msg'] = 'Ghi nhanh cần có ảnh minh chứng. Vui lòng upload ảnh trước khi lưu.';
@@ -164,17 +201,7 @@ function handle_add_quick_action(PDO $db, array $config): void
     $total = 0;
 
     if ($activityKey !== '') {
-        if (!isset($config['activity_options'][$activityKey])) {
-            $_SESSION['msg'] = 'Không tìm thấy hoạt động đã chọn.';
-            redirect_home();
-        }
-
         [$title, $stars, $optionCategory] = $config['activity_options'][$activityKey] + [null, null, 'other'];
-        if ($optionCategory !== $category) {
-            $_SESSION['msg'] = 'Hoạt động không thuộc loại đã chọn.';
-            redirect_home();
-        }
-
         $activityId = insert_activity($db, $date, $title, $optionCategory, $stars, $note, $imagePath);
         insert_audit_log($db, 'Gia đình', 'created', 'activity', $activityId, "Ghi nhanh {$title} ({$stars}★) ngày {$date}.");
         $count++;
@@ -183,11 +210,6 @@ function handle_add_quick_action(PDO $db, array $config): void
     }
 
     if ($penaltyKey !== 0) {
-        if (!isset($config['penalty_options'][$penaltyKey])) {
-            $_SESSION['msg'] = 'Không tìm thấy mục trừ sao đã chọn.';
-            redirect_home();
-        }
-
         [$title, $stars, $penaltyCategory] = $config['penalty_options'][$penaltyKey] + [null, null, 'screen_penalty'];
         $activityId = insert_activity($db, $date, $title, $penaltyCategory, $stars, $note, $imagePath);
         insert_audit_log($db, 'Gia đình', 'created', 'activity', $activityId, "Ghi nhanh {$title} ({$stars}★) ngày {$date}.");
@@ -202,6 +224,35 @@ function handle_add_quick_action(PDO $db, array $config): void
 
     $sign = $total > 0 ? '+' : '';
     $_SESSION['msg'] = "Đã ghi nhanh {$count} mục ({$sign}{$total}★).";
+
+    redirect_home();
+}
+
+function handle_update_child_activity(PDO $db): void
+{
+    $id = (int) ($_POST['id'] ?? 0);
+    $title = trim($_POST['child_title'] ?? '');
+    $note = trim($_POST['child_note'] ?? '');
+    $activity = find_activity($db, $id);
+
+    if (!$activity) {
+        $_SESSION['msg'] = 'Không tìm thấy hoạt động để sửa.';
+        redirect_home();
+    }
+
+    if (($activity['activity_date'] ?? '') !== date('Y-m-d')) {
+        $_SESSION['msg'] = 'Chỉ được sửa task đã nhập trong ngày hiện tại.';
+        redirect_home();
+    }
+
+    if ($title === '') {
+        $_SESSION['msg'] = 'Vui lòng nhập nội dung task.';
+        redirect_home();
+    }
+
+    update_child_activity_content($db, $id, $title, $note);
+    insert_audit_log($db, 'Con', 'updated', 'activity', $id, "Sửa nội dung task {$title} ngày {$activity['activity_date']}.");
+    $_SESSION['msg'] = 'Đã cập nhật nội dung task.';
 
     redirect_home();
 }

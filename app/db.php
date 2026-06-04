@@ -142,6 +142,20 @@ function delete_activity(PDO $db, int $id): void
     $stmt->execute([$id]);
 }
 
+function count_activities_by_date(PDO $db, string $date): int
+{
+    $stmt = $db->prepare('SELECT COUNT(*) FROM activities WHERE activity_date = ?');
+    $stmt->execute([$date]);
+
+    return (int) $stmt->fetchColumn();
+}
+
+function update_child_activity_content(PDO $db, int $id, string $title, string $note): void
+{
+    $stmt = $db->prepare('UPDATE activities SET title = ?, note = ? WHERE id = ?');
+    $stmt->execute([$title, $note, $id]);
+}
+
 function update_activity_parent_feedback(PDO $db, int $id, bool $liked, string $comment): void
 {
     $stmt = $db->prepare('UPDATE activities SET parent_liked = ?, parent_comment = ? WHERE id = ?');

@@ -94,6 +94,20 @@ function require_today_date(?string $date, string $fieldLabel = 'ngày chọn'):
     return $date;
 }
 
+function ensure_activity_daily_limit(PDO $db, string $date, int $newActivityCount, int $maxActivities = 12): void
+{
+    if ($newActivityCount <= 0) {
+        return;
+    }
+
+    $currentCount = count_activities_by_date($db, $date);
+    if ($currentCount + $newActivityCount > $maxActivities) {
+        $remaining = max(0, $maxActivities - $currentCount);
+        $_SESSION['msg'] = "Một ngày chỉ được ghi tối đa {$maxActivities} hoạt động. Hôm nay còn có thể thêm {$remaining} hoạt động.";
+        redirect_home();
+    }
+}
+
 function get_activity_icon(array $activity): string
 {
     if ((int) ($activity['stars'] ?? 0) < 0) {
