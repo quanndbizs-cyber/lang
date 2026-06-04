@@ -148,24 +148,60 @@ function handle_add_reward(PDO $db, array $config): void
 
 function handle_add_quick_action(PDO $db, array $config): void
 {
-    $quickActionKey = $_POST['quick_action'] ?? '';
+    $activityKey = $_POST['quick_activity_option'] ?? '';
+    $penaltyKey = (int) ($_POST['penalty_activity'] ?? 0);
+    $category = sanitize_activity_category($_POST['quick_activity_category'] ?? 'other', $config);
     $date = $_POST['quick_date'] ?: date('Y-m-d');
-    $imagePath = save_uploaded_image('quick_image', $config);
+    $note = trim($_POST['quick_note'] ?? '');
 
-    if (!isset($config['quick_actions'][$quickActionKey])) {
-        $_SESSION['msg'] = 'Không tìm thấy hành động nhanh.';
+    if (empty($_FILES['quick_image']['name']) || !is_uploaded_file($_FILES['quick_image']['tmp_name'])) {
+        $_SESSION['msg'] = 'Ghi nhanh cần có ảnh minh chứng. Vui lòng upload ảnh trước khi lưu.';
         redirect_home();
     }
 
-    [$title, $stars, $category] = $config['quick_actions'][$quickActionKey] + [null, null, 'other'];
-    $activityId = insert_activity($db, $date, $title, $category, $stars, '', $imagePath);
-    insert_audit_log($db, 'Gia đình', 'created', 'activity', $activityId, "Ghi nhanh {$title} ({$stars}★) ngày {$date}.");
+    $imagePath = save_uploaded_image('quick_image', $config);
+    $count = 0;
+    $total = 0;
 
-    $sign = $stars > 0 ? '+' : '';
-    $_SESSION['msg'] = "Đã ghi nhanh {$title} ({$sign}{$stars}★).";
-    if ($imagePath === null) {
-        $_SESSION['msg'] .= ' Lưu ý: chưa upload ảnh minh chứng.';
+    if ($activityKey !== '') {
+        if (!isset($config['activity_options'][$activityKey])) {
+            $_SESSION['msg'] = 'Không tìm thấy hoạt động đã chọn.';
+            redirect_home();
+        }
+
+        [$title, $stars, $optionCategory] = $config['activity_options'][$activityKey] + [null, null, 'other'];
+        if ($optionCategory !== $category) {
+            $_SESSION['msg'] = 'Hoạt động không thuộc loại đã chọn.';
+            redirect_home();
+        }
+
+        $activityId = insert_activity($db, $date, $title, $optionCategory, $stars, $note, $imagePath);
+        insert_audit_log($db, 'Gia đình', 'created', 'activity', $activityId, "Ghi nhanh {$title} ({$stars}★) ngày {$date}.");
+        $count++;
+        $total += $stars;
+        $imagePath = null;
     }
+
+    if ($penaltyKey !== 0) {
+        if (!isset($config['penalty_options'][$penaltyKey])) {
+            $_SESSION['msg'] = 'Không tìm thấy mục trừ sao đã chọn.';
+            redirect_home();
+        }
+
+        [$title, $stars, $penaltyCategory] = $config['penalty_options'][$penaltyKey] + [null, null, 'screen_penalty'];
+        $activityId = insert_activity($db, $date, $title, $penaltyCategory, $stars, $note, $imagePath);
+        insert_audit_log($db, 'Gia đình', 'created', 'activity', $activityId, "Ghi nhanh {$title} ({$stars}★) ngày {$date}.");
+        $count++;
+        $total += $stars;
+    }
+
+    if ($count === 0) {
+        $_SESSION['msg'] = 'Vui lòng chọn hoạt động hoặc mục trừ sao.';
+        redirect_home();
+    }
+
+    $sign = $total > 0 ? '+' : '';
+    $_SESSION['msg'] = "Đã ghi nhanh {$count} mục ({$sign}{$total}★).";
 
     redirect_home();
 }

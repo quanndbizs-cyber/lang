@@ -14,7 +14,6 @@ handle_request($db, $config);
 $activityOptions = $config['activity_options'];
 $activityCategories = $config['activity_categories'];
 $penaltyOptions = $config['penalty_options'];
-$quickActions = $config['quick_actions'];
 $rewardOptions = $config['reward_options'];
 $parentLoggedIn = is_parent_logged_in();
 
@@ -82,19 +81,41 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
         <input type="date" id="quickDate" name="quick_date" value="<?=date('Y-m-d')?>">
       </div>
     </div>
+    <div class="quick-fields">
+      <p>
+        <b>Loại hoạt động</b>
+        <select name="quick_activity_category" data-quick-category>
+          <?php foreach ($activityCategories as $key => $label): ?>
+            <?php if ($key === 'screen_penalty'): continue; endif; ?>
+            <option value="<?=h($key)?>"><?=h($label)?></option>
+          <?php endforeach; ?>
+        </select>
+      </p>
+      <p>
+        <b>Hoạt động cụ thể</b>
+        <select name="quick_activity_option" data-quick-activity>
+          <option value="">Chọn hoạt động</option>
+          <?php foreach ($activityOptions as $key => $option): [$label, $stars, $category] = $option + [null, null, 'other']; ?>
+            <option value="<?=h($key)?>" data-category="<?=h($category)?>"><?=h($label)?> (<?=($stars > 0 ? '+' : '').h($stars)?>★)</option>
+          <?php endforeach; ?>
+        </select>
+      </p>
+      <p>
+        <b>Trừ sao nếu có</b>
+        <select name="penalty_activity">
+          <?php foreach ($penaltyOptions as $minutes => $option): [$label, $stars] = $option + [null, 0]; ?>
+            <option value="<?=h($minutes)?>"><?=h($label)?><?= $stars !== 0 ? ' (' . ($stars > 0 ? '+' : '') . h($stars) . '★)' : '' ?></option>
+          <?php endforeach; ?>
+        </select>
+      </p>
+    </div>
     <div class="quick-proof">
       <label for="quickImage"><b>Ảnh minh chứng</b></label>
-      <input type="file" id="quickImage" name="quick_image" accept="image/jpeg,image/png,image/webp">
-      <span class="muted">Nếu chưa chọn ảnh, hệ thống vẫn lưu và sẽ cảnh báo chưa upload ảnh minh chứng.</span>
+      <input type="file" id="quickImage" name="quick_image" accept="image/jpeg,image/png,image/webp" required>
+      <span class="muted">Bắt buộc upload ảnh minh chứng trước khi lưu ghi nhanh.</span>
     </div>
-    <div class="quick-grid">
-      <?php foreach ($quickActions as $key => $quickAction): [$label, $stars] = $quickAction; ?>
-        <button class="quick-btn <?= $stars < 0 ? 'danger' : 'good' ?>" type="submit" name="quick_action" value="<?=h($key)?>">
-          <span><?=h($label)?></span>
-          <strong><?=($stars > 0 ? '+' : '').h($stars)?>★</strong>
-        </button>
-      <?php endforeach; ?>
-    </div>
+    <p><b>Ghi chú</b><textarea name="quick_note" placeholder="Ví dụ: con tự hoàn thành trước giờ ăn tối..."></textarea></p>
+    <button class="btn green">Lưu ghi nhanh</button>
   </form>
 
   <div class="grid">
@@ -234,7 +255,38 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
 const rewardSelect=document.getElementById('rewardSelect'), costInput=document.getElementById('costInput');
 if(rewardSelect){function syncReward(){costInput.value=rewardSelect.options[rewardSelect.selectedIndex].dataset.cost} rewardSelect.addEventListener('change',syncReward); syncReward();}
 const quickForm=document.querySelector('[data-quick-form]');
-if(quickForm){quickForm.addEventListener('submit',(event)=>{const image=quickForm.querySelector('input[name="quick_image"]');if(image&&image.files.length===0&&!confirm('Bạn chưa upload ảnh minh chứng. Vẫn lưu ghi nhanh?')){event.preventDefault();}});}
+if(quickForm){
+  const categorySelect=quickForm.querySelector('[data-quick-category]');
+  const activitySelect=quickForm.querySelector('[data-quick-activity]');
+  const activityOptions=activitySelect?Array.from(activitySelect.options):[];
+
+  function syncQuickActivities(){
+    if(!categorySelect||!activitySelect){return;}
+    const selectedCategory=categorySelect.value;
+    let firstVisible='';
+    activityOptions.forEach((option)=>{
+      const category=option.dataset.category||'';
+      const visible=option.value===''||category===selectedCategory;
+      option.hidden=!visible;
+      option.disabled=!visible;
+      if(visible&&option.value!==''&&firstVisible===''){firstVisible=option.value;}
+    });
+    if(activitySelect.selectedOptions.length&&activitySelect.selectedOptions[0].disabled){
+      activitySelect.value=firstVisible;
+    }
+  }
+
+  if(categorySelect){categorySelect.addEventListener('change',syncQuickActivities);}
+  syncQuickActivities();
+
+  quickForm.addEventListener('submit',(event)=>{
+    const image=quickForm.querySelector('input[name="quick_image"]');
+    if(image&&image.files.length===0){
+      event.preventDefault();
+      alert('Ghi nhanh cần có ảnh minh chứng. Vui lòng upload ảnh trước khi lưu.');
+    }
+  });
+}
 document.querySelectorAll('[data-parent-feedback]').forEach((form)=>{
   const checkbox=form.querySelector('input[name="parent_liked"]');
   const status=form.querySelector('[data-feedback-status]');
