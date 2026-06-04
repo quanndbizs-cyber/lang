@@ -65,7 +65,7 @@ function handle_parent_logout(): void
 
 function handle_add_daily(PDO $db, array $config): void
 {
-    $date = $_POST['activity_date'] ?: date('Y-m-d');
+    $date = require_today_date($_POST['activity_date'] ?? '', 'ngày ghi nhận');
     $note = trim($_POST['note'] ?? '');
     $imagePath = save_uploaded_image('image', $config);
     $count = 0;
@@ -99,7 +99,7 @@ function handle_add_daily(PDO $db, array $config): void
 
 function handle_add_single(PDO $db, array $config): void
 {
-    $date = $_POST['single_date'] ?: date('Y-m-d');
+    $date = require_today_date($_POST['single_date'] ?? '', 'ngày hoạt động');
     $title = trim($_POST['single_title'] ?? '');
     $category = sanitize_activity_category($_POST['single_category'] ?? 'other', $config);
     $stars = (int) ($_POST['single_stars'] ?? 0);
@@ -119,7 +119,7 @@ function handle_add_single(PDO $db, array $config): void
 
 function handle_add_reward(PDO $db, array $config): void
 {
-    $date = $_POST['reward_date'] ?: date('Y-m-d');
+    $date = require_today_date($_POST['reward_date'] ?? '', 'ngày đổi thưởng');
     $title = trim($_POST['reward_title'] ?? '');
     $rewardOptions = $config['reward_options'];
     $cost = (int) ($rewardOptions[$title] ?? 0);
@@ -151,7 +151,7 @@ function handle_add_quick_action(PDO $db, array $config): void
     $activityKey = $_POST['quick_activity_option'] ?? '';
     $penaltyKey = (int) ($_POST['penalty_activity'] ?? 0);
     $category = sanitize_activity_category($_POST['quick_activity_category'] ?? 'other', $config);
-    $date = $_POST['quick_date'] ?: date('Y-m-d');
+    $date = require_today_date($_POST['quick_date'] ?? '', 'ngày ghi nhanh');
     $note = trim($_POST['quick_note'] ?? '');
 
     if (empty($_FILES['quick_image']['name']) || !is_uploaded_file($_FILES['quick_image']['tmp_name'])) {

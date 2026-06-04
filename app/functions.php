@@ -71,6 +71,29 @@ function format_activity_datetime(?string $datetime): string
     return date('d/m/Y H:i', $timestamp);
 }
 
+function require_today_date(?string $date, string $fieldLabel = 'ngày chọn'): string
+{
+    $date = trim((string) $date);
+    $today = date('Y-m-d');
+
+    if ($date === '') {
+        return $today;
+    }
+
+    $parsed = DateTimeImmutable::createFromFormat('!Y-m-d', $date);
+    if (!$parsed || $parsed->format('Y-m-d') !== $date) {
+        $_SESSION['msg'] = "Vui lòng chọn {$fieldLabel} hợp lệ.";
+        redirect_home();
+    }
+
+    if ($date !== $today) {
+        $_SESSION['msg'] = "Không thể lưu {$fieldLabel} trước hoặc sau ngày hiện tại.";
+        redirect_home();
+    }
+
+    return $date;
+}
+
 function get_activity_icon(array $activity): string
 {
     if ((int) ($activity['stars'] ?? 0) < 0) {

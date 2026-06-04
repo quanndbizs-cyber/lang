@@ -78,7 +78,7 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
       <h2>⚡ Ghi nhanh trong 1 chạm</h2>
       <div class="quick-date">
         <label for="quickDate"><b>Ngày áp dụng</b></label>
-        <input type="date" id="quickDate" name="quick_date" value="<?=date('Y-m-d')?>">
+        <input type="date" id="quickDate" name="quick_date" value="<?=date('Y-m-d')?>" min="<?=date('Y-m-d')?>" max="<?=date('Y-m-d')?>">
       </div>
     </div>
     <div class="quick-fields">
@@ -170,7 +170,7 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
       <div class="notice reward-balance">Bạn đang có <b><?=h($dashboard['current_stars'])?>★</b> để đổi thưởng.</div>
       <form method="post">
         <input type="hidden" name="action" value="add_reward">
-        <p><b>Ngày đổi</b><input type="date" name="reward_date" value="<?=date('Y-m-d')?>"></p>
+        <p><b>Ngày đổi</b><input type="date" name="reward_date" value="<?=date('Y-m-d')?>" min="<?=date('Y-m-d')?>" max="<?=date('Y-m-d')?>"></p>
         <p><b>Phần thưởng</b><select name="reward_title" id="rewardSelect">
           <?php foreach ($rewardOptions as $name=>$cost): ?><option value="<?=h($name)?>" data-cost="<?=h($cost)?>"><?=h($name)?> (<?=h($cost)?>★)</option><?php endforeach; ?>
         </select></p>
@@ -184,7 +184,7 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
       <h2>➕ Thêm hoạt động nâng cao</h2>
       <form method="post" enctype="multipart/form-data">
         <input type="hidden" name="action" value="add_single">
-        <p><b>Ngày</b><input type="date" name="single_date" value="<?=date('Y-m-d')?>"></p>
+        <p><b>Ngày</b><input type="date" name="single_date" value="<?=date('Y-m-d')?>" min="<?=date('Y-m-d')?>" max="<?=date('Y-m-d')?>"></p>
         <p><b>Hoạt động</b><input name="single_title" placeholder="Ví dụ: Đọc xong 1 cuốn sách" required></p>
         <div class="form-row">
           <p><b>Loại hoạt động</b><select name="single_category">
