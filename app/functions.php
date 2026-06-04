@@ -104,6 +104,23 @@ function get_parent_review_status_label(?string $status): string
     return $options[$status];
 }
 
+function get_counted_activity_stars(array $activity): int
+{
+    $stars = (int) ($activity['stars'] ?? 0);
+    $status = sanitize_parent_review_status($activity['status'] ?? 'pending');
+
+    if ($status === 'ng' && $stars > 0) {
+        return 0;
+    }
+
+    return $stars;
+}
+
+function format_star_delta(int $stars): string
+{
+    return ($stars > 0 ? '+' : '') . $stars . '★';
+}
+
 function format_activity_datetime(?string $datetime): string
 {
     if (!$datetime) {
