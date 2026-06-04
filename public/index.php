@@ -18,6 +18,7 @@ $rewardOptions = $config['reward_options'];
 $parentLoggedIn = is_parent_logged_in();
 $parentReviewStatusOptions = parent_review_status_options();
 $appVersion = $config['app_version'] ?? '1.0.0';
+$publicBasePath = $config['public_base_path'] ?? '';
 
 $dashboard = build_dashboard_stats(
     fetch_activity_totals($db),
@@ -34,7 +35,7 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>⭐ Bảng sao mùa hè</title>
-<link rel="stylesheet" href="<?=h(public_url('assets/style.css'))?>">
+<link rel="stylesheet" href="<?=h(public_url('assets/style.css', $publicBasePath))?>">
 </head>
 <body>
 <div class="wrap">
@@ -139,7 +140,7 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
                 <?php if (!empty($activity['note'])): ?><div class="today-note"><?=h($activity['note'])?></div><?php endif; ?>
               </div>
               <div class="today-stars <?= $activity['stars']<0?'danger':'positive' ?>"><?=($activity['stars']>0?'+':'').h($activity['stars'])?>★</div>
-              <?php if ($activity['image_path']): ?><a href="<?=h(public_url($activity['image_path']))?>" data-image-preview><img class="photo small-photo" src="<?=h(public_url($activity['image_path']))?>" alt="Ảnh minh chứng"></a><?php endif; ?>
+              <?php if ($activity['image_path']): ?><a href="<?=h(public_url($activity['image_path'], $publicBasePath))?>" data-image-preview><img class="photo small-photo" src="<?=h(public_url($activity['image_path'], $publicBasePath))?>" alt="Ảnh minh chứng"></a><?php endif; ?>
               <form class="child-edit-form no-print" method="post">
                 <input type="hidden" name="action" value="update_child_activity">
                 <input type="hidden" name="id" value="<?=h($activity['id'])?>">
@@ -231,7 +232,7 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
           </td>
           <td><b class="<?= $a['stars']<0?'star minus':'positive' ?>"><?=($a['stars']>0?'+':'').h($a['stars'])?>★</b></td>
           <td class="mobile-hide"><?=h($a['note'])?></td>
-          <td><?php if ($a['image_path']): ?><a href="<?=h(public_url($a['image_path']))?>" data-image-preview><img class="photo" src="<?=h(public_url($a['image_path']))?>" alt="Ảnh minh chứng"></a><?php endif; ?></td>
+          <td><?php if ($a['image_path']): ?><a href="<?=h(public_url($a['image_path'], $publicBasePath))?>" data-image-preview><img class="photo" src="<?=h(public_url($a['image_path'], $publicBasePath))?>" alt="Ảnh minh chứng"></a><?php endif; ?></td>
           <td class="mobile-hide">
             <?php if ($parentLoggedIn): ?>
               <form class="parent-feedback no-print" method="post" data-parent-feedback>

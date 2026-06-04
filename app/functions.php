@@ -25,18 +25,25 @@ function json_response(array $payload, int $statusCode = 200): void
     exit;
 }
 
-function public_url(?string $path): string
+function public_url(?string $path, string $basePath = ''): string
 {
     $path = trim((string) $path);
     if ($path === '') {
         return '';
     }
 
-    if (preg_match('#^https?://#', $path) || str_starts_with($path, '/')) {
+    if (preg_match('#^https?://#', $path)) {
         return $path;
     }
 
-    return '/' . ltrim($path, '/');
+    $basePath = trim($basePath, '/');
+    $path = ltrim($path, '/');
+
+    if ($basePath === '') {
+        return '/' . $path;
+    }
+
+    return '/' . $basePath . '/' . $path;
 }
 
 function is_parent_logged_in(): bool
