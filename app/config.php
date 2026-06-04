@@ -3,6 +3,7 @@
 return [
     'db_file' => __DIR__ . '/../database/summer.db',
     'upload_dir' => __DIR__ . '/../public/uploads',
+    'app_version' => '1.1.1',
     'max_upload_size' => 5 * 1024 * 1024,
     'allowed_upload_types' => [
         'image/jpeg' => 'jpg',
