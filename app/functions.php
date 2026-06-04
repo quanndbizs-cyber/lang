@@ -25,6 +25,20 @@ function json_response(array $payload, int $statusCode = 200): void
     exit;
 }
 
+function public_url(?string $path): string
+{
+    $path = trim((string) $path);
+    if ($path === '') {
+        return '';
+    }
+
+    if (preg_match('#^https?://#', $path) || str_starts_with($path, '/')) {
+        return $path;
+    }
+
+    return '/' . ltrim($path, '/');
+}
+
 function is_parent_logged_in(): bool
 {
     return !empty($_SESSION['parent_logged_in']);
