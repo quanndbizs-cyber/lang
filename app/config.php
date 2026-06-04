@@ -12,6 +12,7 @@ return [
         'image/webp' => 'webp',
     ],
     'parent_password' => getenv('PARENT_PASSWORD') ?: '1234',
+    'child_password' => getenv('CHILD_PASSWORD') ?: '1234',
     'activity_categories' => [
         'study' => 'Học tập',
         'reading' => 'Đọc sách',

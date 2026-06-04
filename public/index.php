@@ -11,14 +11,53 @@ $db = connect_database($config);
 
 handle_request($db, $config);
 
+$parentLoggedIn = is_parent_logged_in();
+$childLoggedIn = is_child_logged_in();
 $activityOptions = $config['activity_options'];
 $activityCategories = $config['activity_categories'];
 $penaltyOptions = $config['penalty_options'];
 $rewardOptions = $config['reward_options'];
-$parentLoggedIn = is_parent_logged_in();
 $parentReviewStatusOptions = parent_review_status_options();
 $appVersion = $config['app_version'] ?? '1.0.0';
 $publicBasePath = $config['public_base_path'] ?? '';
+
+if (!is_app_logged_in()): ?>
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Đăng nhập - Bảng sao mùa hè</title>
+<link rel="stylesheet" href="<?=h(public_url('assets/style.css', $publicBasePath))?>">
+</head>
+<body>
+<div class="wrap auth-wrap">
+  <div class="hero auth-hero">
+    <h1>🌈 BẢNG SAO MÙA HÈ ⭐</h1>
+    <div class="sub">Đăng nhập để xem và nhập thông tin.</div>
+  </div>
+  <?php if (!empty($_SESSION['msg'])): ?><div class="notice"><?=h($_SESSION['msg']); unset($_SESSION['msg']);?></div><?php endif; ?>
+  <div class="auth-grid">
+    <div class="card">
+      <h2>👧 Đăng nhập cho con</h2>
+      <form class="parent-login-form" method="post">
+        <input type="hidden" name="action" value="child_login">
+        <input type="password" name="child_password" placeholder="Mật khẩu của con" required autofocus>
+        <button class="btn green">Vào bảng sao</button>
+      </form>
+    </div>
+    <div class="card">
+      <h2>🔐 Đăng nhập bố mẹ</h2>
+      <form class="parent-login-form" method="post">
+        <input type="hidden" name="action" value="parent_login">
+        <input type="password" name="parent_password" placeholder="Mật khẩu bố mẹ" required>
+        <button class="btn blue">Đăng nhập</button>
+      </form>
+    </div>
+  </div>
+  <div class="footer">v<?=h($appVersion)?></div>
+</div>
+</body></html>
+<?php exit; endif;
 
 $dashboard = build_dashboard_stats(
     fetch_activity_totals($db),
@@ -67,6 +106,18 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
         <input type="password" name="parent_password" placeholder="Mật khẩu bố mẹ" required>
         <button class="btn small blue">Đăng nhập</button>
       </form>
+    <?php endif; ?>
+  </div>
+  <div class="card no-print parent-login-card" style="margin-top:18px">
+    <h2>👧 Khu vực con</h2>
+    <?php if ($childLoggedIn): ?>
+      <form class="parent-login-form" method="post">
+        <input type="hidden" name="action" value="child_logout">
+        <span class="notice inline-notice">Con đã đăng nhập.</span>
+        <button class="btn small green">Đăng xuất</button>
+      </form>
+    <?php else: ?>
+      <div class="muted">Con chưa đăng nhập. Bố mẹ đang xem bằng quyền bố mẹ.</div>
     <?php endif; ?>
   </div>
   <div class="card" style="margin-top:18px">
