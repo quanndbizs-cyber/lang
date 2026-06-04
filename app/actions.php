@@ -14,19 +14,30 @@ function handle_request(PDO $db, array $config): void
     if ($action === 'parent_logout') {
         handle_parent_logout();
     }
+    if ($action === 'child_login') {
+        handle_child_login($config);
+    }
+    if ($action === 'child_logout') {
+        handle_child_logout();
+    }
     if ($action === 'add_daily') {
+        require_child_or_parent_login();
         handle_add_daily($db, $config);
     }
     if ($action === 'add_single') {
+        require_child_or_parent_login();
         handle_add_single($db, $config);
     }
     if ($action === 'add_reward') {
+        require_child_or_parent_login();
         handle_add_reward($db, $config);
     }
     if ($action === 'add_quick_action') {
+        require_child_or_parent_login();
         handle_add_quick_action($db, $config);
     }
     if ($action === 'update_child_activity') {
+        require_child_or_parent_login();
         handle_update_child_activity($db);
     }
     if ($action === 'delete_activity') {
@@ -62,6 +73,29 @@ function handle_parent_logout(): void
 {
     unset($_SESSION['parent_logged_in']);
     $_SESSION['msg'] = 'Bố mẹ đã đăng xuất.';
+
+    redirect_home();
+}
+
+function handle_child_login(array $config): void
+{
+    $password = (string) ($_POST['child_password'] ?? '');
+
+    if (verify_child_password($password, $config)) {
+        session_regenerate_id(true);
+        $_SESSION['child_logged_in'] = true;
+        $_SESSION['msg'] = 'Con đã đăng nhập.';
+    } else {
+        $_SESSION['msg'] = 'Mật khẩu của con chưa đúng.';
+    }
+
+    redirect_home();
+}
+
+function handle_child_logout(): void
+{
+    unset($_SESSION['child_logged_in']);
+    $_SESSION['msg'] = 'Con đã đăng xuất.';
 
     redirect_home();
 }

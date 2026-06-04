@@ -51,6 +51,16 @@ function is_parent_logged_in(): bool
     return !empty($_SESSION['parent_logged_in']);
 }
 
+function is_child_logged_in(): bool
+{
+    return !empty($_SESSION['child_logged_in']);
+}
+
+function is_app_logged_in(): bool
+{
+    return is_parent_logged_in() || is_child_logged_in();
+}
+
 function require_parent_login(): void
 {
     if (is_parent_logged_in()) {
@@ -68,9 +78,33 @@ function require_parent_login(): void
     redirect_home();
 }
 
+function require_child_or_parent_login(): void
+{
+    if (is_app_logged_in()) {
+        return;
+    }
+
+    if (is_ajax_request()) {
+        json_response([
+            'ok' => false,
+            'message' => 'Cần đăng nhập để thực hiện thao tác này.',
+        ], 403);
+    }
+
+    $_SESSION['msg'] = 'Cần đăng nhập để thực hiện thao tác này.';
+    redirect_home();
+}
+
 function verify_parent_password(string $password, array $config): bool
 {
     return hash_equals((string) $config['parent_password'], $password);
+}
+
+function verify_child_password(string $password, array $config): bool
+{
+    $childPassword = (string) ($config['child_password'] ?? getenv('CHILD_PASSWORD') ?: '1234');
+
+    return hash_equals($childPassword, $password);
 }
 
 function sanitize_activity_category(string $category, array $config): string
