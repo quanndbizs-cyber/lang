@@ -269,7 +269,7 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
 
   <div class="card" style="margin-top:18px">
     <h2>📅 Lịch sử thành tích</h2>
-    <div class="table-wrap"><table class="table history-table"><tr><th>Ngày áp dụng</th><th class="mobile-hide">Thời gian ghi nhận</th><th class="mobile-hide">Icon</th><th class="mobile-hide">Loại</th><th>Hoạt động</th><th>Sao</th><th class="mobile-hide">Ghi chú</th><th>Ảnh</th><th class="mobile-hide">Phản hồi bố mẹ</th><th class="no-print mobile-hide"></th></tr>
+    <div class="table-wrap"><table class="table history-table"><tr><th>Ngày áp dụng</th><th class="mobile-hide">Thời gian ghi nhận</th><th class="mobile-hide">Icon</th><th class="mobile-hide">Loại</th><th>Hoạt động</th><th>Sao</th><th class="mobile-hide">Ghi chú</th><th>Ảnh</th><th class="mobile-hide history-parent-feedback-col">Phản hồi bố mẹ</th><th class="no-print mobile-hide history-actions-col">Thao tác</th></tr>
       <?php foreach ($activities as $a): ?>
         <?php $feedbackText = ((int) ($a['parent_liked'] ?? 0) === 1 ? '❤️ ' : '') . ($a['parent_comment'] ?? ''); ?>
         <?php $countedStars = get_counted_activity_stars($a); ?>
@@ -292,7 +292,7 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
           </td>
           <td class="mobile-hide"><?=h($a['note'])?></td>
           <td><?php if ($a['image_path']): ?><a href="<?=h(public_url($a['image_path'], $publicBasePath))?>" data-image-preview><img class="photo" src="<?=h(public_url($a['image_path'], $publicBasePath))?>" alt="Ảnh minh chứng"></a><?php endif; ?></td>
-          <td class="mobile-hide">
+          <td class="mobile-hide history-parent-feedback-col">
             <?php if ($parentLoggedIn): ?>
               <form class="parent-feedback no-print" method="post" data-parent-feedback>
                 <input type="hidden" name="action" value="update_activity_parent_feedback">
@@ -312,7 +312,23 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
             <div class="print-feedback parent-feedback-text" data-feedback-print><?=h($feedbackText)?></div>
             <div class="parent-feedback-text no-print" data-feedback-display><?=h($feedbackText)?></div>
           </td>
-          <td class="no-print mobile-hide"><?php if ($parentLoggedIn): ?><form method="post" onsubmit="return confirm('Xóa dòng này?')"><input type="hidden" name="action" value="delete_activity"><input type="hidden" name="id" value="<?=h($a['id'])?>"><button class="btn small red">Xóa</button></form><?php else: ?><span class="muted">Cần login</span><?php endif; ?></td>
+          <td class="no-print mobile-hide history-actions-col">
+            <?php if ($parentLoggedIn): ?>
+              <div class="history-actions">
+                <details class="history-edit">
+                  <summary>Sửa</summary>
+                  <form method="post">
+                    <input type="hidden" name="action" value="update_activity_parent_edit">
+                    <input type="hidden" name="id" value="<?=h($a['id'])?>">
+                    <input name="parent_edit_title" value="<?=h($a['title'])?>" required>
+                    <textarea name="parent_edit_note" placeholder="Ghi chú"><?=h($a['note'] ?? '')?></textarea>
+                    <button class="btn small blue">Lưu sửa</button>
+                  </form>
+                </details>
+                <form method="post" onsubmit="return confirm('Xóa dòng này?')"><input type="hidden" name="action" value="delete_activity"><input type="hidden" name="id" value="<?=h($a['id'])?>"><button class="btn small red">Xóa</button></form>
+              </div>
+            <?php else: ?><span class="muted">Cần login</span><?php endif; ?>
+          </td>
         </tr>
       <?php endforeach; ?>
     </table></div>

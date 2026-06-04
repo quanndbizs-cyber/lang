@@ -48,6 +48,10 @@ function handle_request(PDO $db, array $config): void
         require_parent_login();
         handle_update_activity_parent_feedback($db, $config);
     }
+    if ($action === 'update_activity_parent_edit') {
+        require_parent_login();
+        handle_update_activity_parent_edit($db);
+    }
     if ($action === 'delete_reward') {
         require_parent_login();
         handle_delete_reward($db);
@@ -352,6 +356,30 @@ function handle_update_activity_parent_feedback(PDO $db, array $config): void
     }
 
     $_SESSION['msg'] = 'Đã lưu phản hồi của bố mẹ.';
+    redirect_home();
+}
+
+function handle_update_activity_parent_edit(PDO $db): void
+{
+    $id = (int) ($_POST['id'] ?? 0);
+    $title = trim($_POST['parent_edit_title'] ?? '');
+    $note = trim($_POST['parent_edit_note'] ?? '');
+    $activity = find_activity($db, $id);
+
+    if (!$activity) {
+        $_SESSION['msg'] = 'Không tìm thấy hoạt động để sửa.';
+        redirect_home();
+    }
+
+    if ($title === '') {
+        $_SESSION['msg'] = 'Vui lòng nhập nội dung hoạt động.';
+        redirect_home();
+    }
+
+    update_child_activity_content($db, $id, $title, $note);
+    insert_audit_log($db, 'Bố mẹ', 'updated', 'activity', $id, "Sửa hoạt động {$title} ngày {$activity['activity_date']}.");
+    $_SESSION['msg'] = 'Bố mẹ đã cập nhật hoạt động.';
+
     redirect_home();
 }
 

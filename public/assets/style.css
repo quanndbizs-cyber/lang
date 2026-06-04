@@ -53,7 +53,12 @@ body{margin:0;font-family:Arial,"Segoe UI",sans-serif;background:linear-gradient
 .today-note{margin-top:4px}
 .child-edit-form{grid-column:2/5;display:grid;grid-template-columns:1fr 1.4fr auto;gap:8px;align-items:start}
 .child-edit-form textarea{min-height:42px;padding:8px}
+.history-actions{display:grid;gap:8px;min-width:150px}
+.history-edit summary{cursor:pointer;font-weight:bold;color:#0b74d1;margin-bottom:6px}
+.history-edit form{display:grid;gap:6px}
+.history-edit textarea{min-height:52px;padding:8px}
 .small-photo{width:58px;height:46px}
 .empty-state{background:#f6fbff;border:2px dashed #d9f0ff;border-radius:18px;padding:16px;text-align:center;color:#607d8b;font-weight:bold}
 @media(max-width:850px){.grid,.stat-grid,.two-col,.quick-grid,.quick-head,.quick-fields,.quick-proof,.form-row,.parent-login-form,.auth-grid{grid-template-columns:1fr}.quick-head{display:grid}.quick-date{display:grid;gap:6px}.quick-date input{min-width:0}.quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.today-item{grid-template-columns:auto 1fr auto}.today-item .photo{grid-column:2/4}.child-edit-form{grid-column:1/4;grid-template-columns:1fr}.history-table th,.history-table td{padding:7px 6px}.history-table .mobile-hide{display:none}.history-mobile-meta{display:block}.history-table .photo{width:58px;height:46px}h1{font-size:32px}.hero:before,.hero:after{font-size:28px}.stars{font-size:34px}.wrap{padding:10px}.card{padding:14px}}
+@media(max-width:850px) and (orientation:landscape){.history-table .history-parent-feedback-col,.history-table .history-actions-col{display:table-cell}.history-parent-feedback-col{min-width:210px}.history-actions-col{min-width:170px}.history-table .parent-feedback{min-width:190px}.history-table input,.history-table select,.history-table textarea{font-size:13px;padding:7px}.history-table .btn.small{font-size:12px;padding:6px 8px}}
 @media print{.no-print{display:none}.print-feedback{display:block}.wrap{max-width:none}.grid{grid-template-columns:1fr 1fr}.card{break-inside:avoid}body{background:white}.hero{box-shadow:none}.table-wrap{overflow:visible}}
