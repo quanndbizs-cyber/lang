@@ -136,7 +136,7 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
                 <?php if (!empty($activity['note'])): ?><div class="today-note"><?=h($activity['note'])?></div><?php endif; ?>
               </div>
               <div class="today-stars <?= $activity['stars']<0?'danger':'positive' ?>"><?=($activity['stars']>0?'+':'').h($activity['stars'])?>★</div>
-              <?php if ($activity['image_path']): ?><a href="<?=h($activity['image_path'])?>" target="_blank"><img class="photo small-photo" src="<?=h($activity['image_path'])?>"></a><?php endif; ?>
+              <?php if ($activity['image_path']): ?><a href="<?=h($activity['image_path'])?>" data-image-preview><img class="photo small-photo" src="<?=h($activity['image_path'])?>" alt="Ảnh minh chứng"></a><?php endif; ?>
             </div>
           <?php endforeach; ?>
         </div>
@@ -203,19 +203,25 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
 
   <div class="card" style="margin-top:18px">
     <h2>📅 Lịch sử thành tích</h2>
-    <div class="table-wrap"><table class="table"><tr><th>Ngày áp dụng</th><th>Thời gian ghi nhận</th><th>Icon</th><th>Loại</th><th>Hoạt động</th><th>Sao</th><th>Ghi chú</th><th>Ảnh</th><th>Phản hồi bố mẹ</th><th class="no-print"></th></tr>
+    <div class="table-wrap"><table class="table history-table"><tr><th>Ngày áp dụng</th><th class="mobile-hide">Thời gian ghi nhận</th><th class="mobile-hide">Icon</th><th class="mobile-hide">Loại</th><th>Hoạt động</th><th>Sao</th><th class="mobile-hide">Ghi chú</th><th>Ảnh</th><th class="mobile-hide">Phản hồi bố mẹ</th><th class="no-print mobile-hide"></th></tr>
       <?php foreach ($activities as $a): ?>
         <?php $feedbackText = ((int) ($a['parent_liked'] ?? 0) === 1 ? '❤️ ' : '') . ($a['parent_comment'] ?? ''); ?>
         <tr>
           <td><?=h($a['activity_date'])?></td>
-          <td><?=h(format_activity_datetime($a['created_at'] ?? ''))?></td>
-          <td><span class="history-icon"><?=h(get_activity_icon($a))?></span></td>
-          <td><span class="badge"><?=h($activityCategories[$a['category'] ?? 'other'] ?? 'Khác')?></span></td>
-          <td><?=h($a['title'])?></td>
-          <td><b class="<?= $a['stars']<0?'star minus':'positive' ?>"><?=($a['stars']>0?'+':'').h($a['stars'])?>★</b></td>
-          <td><?=h($a['note'])?></td>
-          <td><?php if ($a['image_path']): ?><a href="<?=h($a['image_path'])?>" target="_blank"><img class="photo" src="<?=h($a['image_path'])?>"></a><?php endif; ?></td>
+          <td class="mobile-hide"><?=h(format_activity_datetime($a['created_at'] ?? ''))?></td>
+          <td class="mobile-hide"><span class="history-icon"><?=h(get_activity_icon($a))?></span></td>
+          <td class="mobile-hide"><span class="badge"><?=h($activityCategories[$a['category'] ?? 'other'] ?? 'Khác')?></span></td>
           <td>
+            <b><?=h($a['title'])?></b>
+            <div class="history-mobile-meta">
+              <?=h(format_activity_datetime($a['created_at'] ?? ''))?> · <?=h($activityCategories[$a['category'] ?? 'other'] ?? 'Khác')?>
+              <?php if (!empty($a['note'])): ?><br><?=h($a['note'])?><?php endif; ?>
+            </div>
+          </td>
+          <td><b class="<?= $a['stars']<0?'star minus':'positive' ?>"><?=($a['stars']>0?'+':'').h($a['stars'])?>★</b></td>
+          <td class="mobile-hide"><?=h($a['note'])?></td>
+          <td><?php if ($a['image_path']): ?><a href="<?=h($a['image_path'])?>" data-image-preview><img class="photo" src="<?=h($a['image_path'])?>" alt="Ảnh minh chứng"></a><?php endif; ?></td>
+          <td class="mobile-hide">
             <?php if ($parentLoggedIn): ?>
               <form class="parent-feedback no-print" method="post" data-parent-feedback>
                 <input type="hidden" name="action" value="update_activity_parent_feedback">
@@ -230,7 +236,7 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
             <div class="print-feedback parent-feedback-text" data-feedback-print><?=h($feedbackText)?></div>
             <div class="parent-feedback-text no-print" data-feedback-display><?=h($feedbackText)?></div>
           </td>
-          <td class="no-print"><?php if ($parentLoggedIn): ?><form method="post" onsubmit="return confirm('Xóa dòng này?')"><input type="hidden" name="action" value="delete_activity"><input type="hidden" name="id" value="<?=h($a['id'])?>"><button class="btn small red">Xóa</button></form><?php else: ?><span class="muted">Cần login</span><?php endif; ?></td>
+          <td class="no-print mobile-hide"><?php if ($parentLoggedIn): ?><form method="post" onsubmit="return confirm('Xóa dòng này?')"><input type="hidden" name="action" value="delete_activity"><input type="hidden" name="id" value="<?=h($a['id'])?>"><button class="btn small red">Xóa</button></form><?php else: ?><span class="muted">Cần login</span><?php endif; ?></td>
         </tr>
       <?php endforeach; ?>
     </table></div>
@@ -250,6 +256,10 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
     </table></div>
   </div><?php endif; ?>
   <div class="footer">Con làm được! ⭐ Cố gắng mỗi ngày nhé! 🐰</div>
+</div>
+<div class="image-modal" data-image-modal hidden>
+  <button class="image-modal-close" type="button" data-image-modal-close aria-label="Đóng preview ảnh">×</button>
+  <img src="" alt="Ảnh minh chứng phóng to" data-image-modal-img>
 </div>
 <script>
 const rewardSelect=document.getElementById('rewardSelect'), costInput=document.getElementById('costInput');
@@ -325,5 +335,26 @@ document.querySelectorAll('[data-parent-feedback]').forEach((form)=>{
   });
   if(checkbox){checkbox.addEventListener('change',saveFeedback);}
 });
+const imageModal=document.querySelector('[data-image-modal]');
+const imageModalImg=document.querySelector('[data-image-modal-img]');
+const imageModalClose=document.querySelector('[data-image-modal-close]');
+function closeImageModal(){
+  if(!imageModal||!imageModalImg){return;}
+  imageModal.hidden=true;
+  imageModalImg.src='';
+}
+document.querySelectorAll('[data-image-preview]').forEach((link)=>{
+  link.addEventListener('click',(event)=>{
+    event.preventDefault();
+    if(!imageModal||!imageModalImg){return;}
+    imageModalImg.src=link.href;
+    imageModal.hidden=false;
+  });
+});
+if(imageModalClose){imageModalClose.addEventListener('click',closeImageModal);}
+if(imageModal){
+  imageModal.addEventListener('click',(event)=>{if(event.target===imageModal){closeImageModal();}});
+  document.addEventListener('keydown',(event)=>{if(event.key==='Escape'&&!imageModal.hidden){closeImageModal();}});
+}
 </script>
 </body></html>
