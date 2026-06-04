@@ -102,9 +102,7 @@ function verify_parent_password(string $password, array $config): bool
 
 function verify_child_password(string $password, array $config): bool
 {
-    $childPassword = (string) ($config['child_password'] ?? getenv('CHILD_PASSWORD') ?: '1234');
-
-    return hash_equals($childPassword, $password);
+    return hash_equals((string) ($config['child_password'] ?? ''), $password);
 }
 
 function sanitize_activity_category(string $category, array $config): string
