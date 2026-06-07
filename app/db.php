@@ -19,16 +19,69 @@ function connect_database(array $config): PDO
     $db = new PDO('sqlite:' . $config['db_file']);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    initialize_database($db);
+    initialize_database($db, $config);
 
     return $db;
 }
 
-function initialize_database(PDO $db): void
+function initialize_database(PDO $db, array $config): void
 {
+    $db->exec(
+        "CREATE TABLE IF NOT EXISTS families (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            family_name TEXT NOT NULL,
+            parent_name TEXT,
+            parent_username TEXT NOT NULL UNIQUE,
+            parent_password TEXT NOT NULL,
+            note TEXT,
+            active INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )"
+    );
+
+    $db->exec(
+        "CREATE TABLE IF NOT EXISTS children (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            family_id INTEGER NOT NULL,
+            username TEXT NOT NULL UNIQUE,
+            password TEXT NOT NULL,
+            nickname TEXT,
+            full_name TEXT,
+            birthday TEXT,
+            class_name TEXT,
+            favorite_subject TEXT,
+            hobby TEXT,
+            profile_note TEXT,
+            active INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )"
+    );
+
+    $db->exec(
+        "CREATE TABLE IF NOT EXISTS child_profiles (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            nickname TEXT,
+            full_name TEXT,
+            birthday TEXT,
+            class_name TEXT,
+            favorite_subject TEXT,
+            hobby TEXT,
+            profile_note TEXT,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )"
+    );
+
+    ensure_default_family_and_child($db, $config);
+    $defaultFamilyId = get_default_family_id($db);
+    $defaultChildId = get_default_child_id($db, $defaultFamilyId);
+
     $db->exec(
         "CREATE TABLE IF NOT EXISTS activities (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            family_id INTEGER,
+            child_id INTEGER,
             activity_date TEXT NOT NULL,
             title TEXT NOT NULL,
             category TEXT NOT NULL DEFAULT 'other',
@@ -58,11 +111,21 @@ function initialize_database(PDO $db): void
     if (!in_array('status', $columnNames, true)) {
         $db->exec("ALTER TABLE activities ADD COLUMN status TEXT NOT NULL DEFAULT 'pending'");
     }
+    if (!in_array('family_id', $columnNames, true)) {
+        $db->exec("ALTER TABLE activities ADD COLUMN family_id INTEGER");
+    }
+    if (!in_array('child_id', $columnNames, true)) {
+        $db->exec("ALTER TABLE activities ADD COLUMN child_id INTEGER");
+    }
+    $db->exec("UPDATE activities SET family_id = {$defaultFamilyId} WHERE family_id IS NULL");
+    $db->exec("UPDATE activities SET child_id = {$defaultChildId} WHERE child_id IS NULL");
     $db->exec("UPDATE activities SET status = 'ok' WHERE status = 'approved'");
 
     $db->exec(
         "CREATE TABLE IF NOT EXISTS rewards (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            family_id INTEGER,
+            child_id INTEGER,
             reward_date TEXT NOT NULL,
             title TEXT NOT NULL,
             cost INTEGER NOT NULL,
@@ -70,10 +133,22 @@ function initialize_database(PDO $db): void
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )"
     );
+    $rewardColumns = $db->query('PRAGMA table_info(rewards)')->fetchAll(PDO::FETCH_ASSOC);
+    $rewardColumnNames = array_column($rewardColumns, 'name');
+    if (!in_array('family_id', $rewardColumnNames, true)) {
+        $db->exec("ALTER TABLE rewards ADD COLUMN family_id INTEGER");
+    }
+    if (!in_array('child_id', $rewardColumnNames, true)) {
+        $db->exec("ALTER TABLE rewards ADD COLUMN child_id INTEGER");
+    }
+    $db->exec("UPDATE rewards SET family_id = {$defaultFamilyId} WHERE family_id IS NULL");
+    $db->exec("UPDATE rewards SET child_id = {$defaultChildId} WHERE child_id IS NULL");
 
     $db->exec(
         "CREATE TABLE IF NOT EXISTS audit_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            family_id INTEGER,
+            child_id INTEGER,
             actor TEXT NOT NULL,
             action TEXT NOT NULL,
             entity_type TEXT NOT NULL,
@@ -82,20 +157,61 @@ function initialize_database(PDO $db): void
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )"
     );
+    $auditColumns = $db->query('PRAGMA table_info(audit_logs)')->fetchAll(PDO::FETCH_ASSOC);
+    $auditColumnNames = array_column($auditColumns, 'name');
+    if (!in_array('family_id', $auditColumnNames, true)) {
+        $db->exec("ALTER TABLE audit_logs ADD COLUMN family_id INTEGER");
+    }
+    if (!in_array('child_id', $auditColumnNames, true)) {
+        $db->exec("ALTER TABLE audit_logs ADD COLUMN child_id INTEGER");
+    }
+    $db->exec("UPDATE audit_logs SET family_id = {$defaultFamilyId} WHERE family_id IS NULL");
+    $db->exec("UPDATE audit_logs SET child_id = {$defaultChildId} WHERE child_id IS NULL");
 
     $db->exec(
         "CREATE TABLE IF NOT EXISTS holidays (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            holiday_date TEXT NOT NULL UNIQUE,
+            family_id INTEGER,
+            holiday_date TEXT NOT NULL,
             type TEXT NOT NULL,
             note TEXT,
-            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(family_id, holiday_date)
         )"
     );
+    $holidayTableSql = (string) $db->query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'holidays'")->fetchColumn();
+    if (str_contains($holidayTableSql, 'holiday_date TEXT NOT NULL UNIQUE')) {
+        $db->exec('ALTER TABLE holidays RENAME TO holidays_old_global_unique');
+        $db->exec(
+            "CREATE TABLE holidays (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                family_id INTEGER,
+                holiday_date TEXT NOT NULL,
+                type TEXT NOT NULL,
+                note TEXT,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(family_id, holiday_date)
+            )"
+        );
+        $db->exec(
+            "INSERT INTO holidays(id, family_id, holiday_date, type, note, created_at)
+             SELECT id, COALESCE(family_id, {$defaultFamilyId}), holiday_date, type, note, created_at
+             FROM holidays_old_global_unique"
+        );
+        $db->exec('DROP TABLE holidays_old_global_unique');
+    }
+    $holidayColumns = $db->query('PRAGMA table_info(holidays)')->fetchAll(PDO::FETCH_ASSOC);
+    $holidayColumnNames = array_column($holidayColumns, 'name');
+    if (!in_array('family_id', $holidayColumnNames, true)) {
+        $db->exec("ALTER TABLE holidays ADD COLUMN family_id INTEGER");
+    }
+    $db->exec("UPDATE holidays SET family_id = {$defaultFamilyId} WHERE family_id IS NULL");
 
     $db->exec(
         "CREATE TABLE IF NOT EXISTS weekly_goals (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            family_id INTEGER,
+            child_id INTEGER,
             week_start TEXT NOT NULL,
             title TEXT NOT NULL,
             daily_target INTEGER NOT NULL DEFAULT 0,
@@ -107,24 +223,172 @@ function initialize_database(PDO $db): void
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )"
     );
+    $goalColumns = $db->query('PRAGMA table_info(weekly_goals)')->fetchAll(PDO::FETCH_ASSOC);
+    $goalColumnNames = array_column($goalColumns, 'name');
+    if (!in_array('family_id', $goalColumnNames, true)) {
+        $db->exec("ALTER TABLE weekly_goals ADD COLUMN family_id INTEGER");
+    }
+    if (!in_array('child_id', $goalColumnNames, true)) {
+        $db->exec("ALTER TABLE weekly_goals ADD COLUMN child_id INTEGER");
+    }
+    $db->exec("UPDATE weekly_goals SET family_id = {$defaultFamilyId} WHERE family_id IS NULL");
+    $db->exec("UPDATE weekly_goals SET child_id = {$defaultChildId} WHERE child_id IS NULL");
 
-    $db->exec(
-        "CREATE TABLE IF NOT EXISTS child_profiles (
-            id INTEGER PRIMARY KEY CHECK (id = 1),
-            nickname TEXT,
-            full_name TEXT,
-            birthday TEXT,
-            class_name TEXT,
-            favorite_subject TEXT,
-            hobby TEXT,
-            profile_note TEXT,
-            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-        )"
-    );
+}
+
+function ensure_default_family_and_child(PDO $db, array $config): void
+{
+    $familyCount = (int) $db->query('SELECT COUNT(*) FROM families')->fetchColumn();
+    if ($familyCount === 0) {
+        $stmt = $db->prepare(
+            'INSERT INTO families(family_name, parent_name, parent_username, parent_password, note) VALUES(?, ?, ?, ?, ?)'
+        );
+        $stmt->execute([
+            'Gia đình mặc định',
+            'Bố mẹ',
+            'parent',
+            (string) ($config['parent_password'] ?? '1234'),
+            'Tài khoản mặc định được tạo từ cấu hình hiện có.',
+        ]);
+    }
+
+    $defaultFamilyId = get_default_family_id($db);
+    $childCount = (int) $db->query('SELECT COUNT(*) FROM children')->fetchColumn();
+    if ($childCount === 0) {
+        $profile = $db->query("SELECT * FROM child_profiles WHERE id = 1")->fetch(PDO::FETCH_ASSOC) ?: [];
+        $stmt = $db->prepare(
+            'INSERT INTO children(family_id, username, password, nickname, full_name, birthday, class_name, favorite_subject, hobby, profile_note)
+             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        );
+        $stmt->execute([
+            $defaultFamilyId,
+            'child',
+            (string) ($config['child_password'] ?? '1234'),
+            (string) ($profile['nickname'] ?? ''),
+            (string) ($profile['full_name'] ?? ''),
+            (string) ($profile['birthday'] ?? ''),
+            (string) ($profile['class_name'] ?? ''),
+            (string) ($profile['favorite_subject'] ?? ''),
+            (string) ($profile['hobby'] ?? ''),
+            (string) ($profile['profile_note'] ?? ''),
+        ]);
+    }
+}
+
+function get_default_family_id(PDO $db): int
+{
+    return (int) $db->query('SELECT id FROM families ORDER BY id LIMIT 1')->fetchColumn();
+}
+
+function get_default_child_id(PDO $db, int $familyId): int
+{
+    $stmt = $db->prepare('SELECT id FROM children WHERE family_id = ? ORDER BY id LIMIT 1');
+    $stmt->execute([$familyId]);
+
+    return (int) $stmt->fetchColumn();
+}
+
+function find_family_by_parent_credentials(PDO $db, string $username, string $password): ?array
+{
+    $sql = 'SELECT * FROM families WHERE active = 1 AND parent_password = ?';
+    $params = [$password];
+    if ($username !== '') {
+        $sql .= ' AND parent_username = ?';
+        $params[] = $username;
+    }
+    $sql .= ' ORDER BY id LIMIT 1';
+
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    return $row ?: null;
+}
+
+function find_child_by_credentials(PDO $db, string $username, string $password): ?array
+{
+    $sql = 'SELECT c.*, f.family_name FROM children c JOIN families f ON f.id = c.family_id WHERE c.active = 1 AND f.active = 1 AND c.password = ?';
+    $params = [$password];
+    if ($username !== '') {
+        $sql .= ' AND c.username = ?';
+        $params[] = $username;
+    }
+    $sql .= ' ORDER BY c.id LIMIT 1';
+
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    return $row ?: null;
+}
+
+function find_family(PDO $db, int $id): ?array
+{
+    $stmt = $db->prepare('SELECT * FROM families WHERE id = ?');
+    $stmt->execute([$id]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    return $row ?: null;
+}
+
+function find_child(PDO $db, int $id): ?array
+{
+    $stmt = $db->prepare('SELECT c.*, f.family_name FROM children c JOIN families f ON f.id = c.family_id WHERE c.id = ?');
+    $stmt->execute([$id]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    return $row ?: null;
+}
+
+function fetch_families(PDO $db): array
+{
+    return $db->query('SELECT * FROM families ORDER BY active DESC, id DESC')->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function fetch_children(PDO $db, ?int $familyId = null): array
+{
+    if ($familyId !== null) {
+        $stmt = $db->prepare('SELECT c.*, f.family_name FROM children c JOIN families f ON f.id = c.family_id WHERE c.family_id = ? ORDER BY c.active DESC, c.id DESC');
+        $stmt->execute([$familyId]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    return $db->query('SELECT c.*, f.family_name FROM children c JOIN families f ON f.id = c.family_id ORDER BY f.id DESC, c.active DESC, c.id DESC')->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function insert_family(PDO $db, string $familyName, string $parentName, string $parentUsername, string $parentPassword, string $note): int
+{
+    $stmt = $db->prepare('INSERT INTO families(family_name, parent_name, parent_username, parent_password, note) VALUES(?, ?, ?, ?, ?)');
+    $stmt->execute([$familyName, $parentName, $parentUsername, $parentPassword, $note]);
+
+    return (int) $db->lastInsertId();
+}
+
+function insert_child_account(
+    PDO $db,
+    int $familyId,
+    string $username,
+    string $password,
+    string $nickname,
+    string $fullName
+): int {
+    $stmt = $db->prepare('INSERT INTO children(family_id, username, password, nickname, full_name) VALUES(?, ?, ?, ?, ?)');
+    $stmt->execute([$familyId, $username, $password, $nickname, $fullName]);
+
+    return (int) $db->lastInsertId();
+}
+
+function update_child_account_status(PDO $db, int $childId, bool $active): void
+{
+    $stmt = $db->prepare('UPDATE children SET active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
+    $stmt->execute([$active ? 1 : 0, $childId]);
 }
 
 function insert_activity(
     PDO $db,
+    int $familyId,
+    int $childId,
     string $date,
     string $title,
     string $category,
@@ -134,17 +398,17 @@ function insert_activity(
 ): int
 {
     $stmt = $db->prepare(
-        'INSERT INTO activities(activity_date, title, category, stars, note, image_path, status) VALUES(?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO activities(family_id, child_id, activity_date, title, category, stars, note, image_path, status) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
-    $stmt->execute([$date, $title, $category, $stars, $note, $imagePath, 'pending']);
+    $stmt->execute([$familyId, $childId, $date, $title, $category, $stars, $note, $imagePath, 'pending']);
 
     return (int) $db->lastInsertId();
 }
 
-function insert_reward(PDO $db, string $date, string $title, int $cost, string $note): int
+function insert_reward(PDO $db, int $familyId, int $childId, string $date, string $title, int $cost, string $note): int
 {
-    $stmt = $db->prepare('INSERT INTO rewards(reward_date, title, cost, note) VALUES(?, ?, ?, ?)');
-    $stmt->execute([$date, $title, $cost, $note]);
+    $stmt = $db->prepare('INSERT INTO rewards(family_id, child_id, reward_date, title, cost, note) VALUES(?, ?, ?, ?, ?, ?)');
+    $stmt->execute([$familyId, $childId, $date, $title, $cost, $note]);
 
     return (int) $db->lastInsertId();
 }
@@ -185,10 +449,10 @@ function delete_activity(PDO $db, int $id): void
     $stmt->execute([$id]);
 }
 
-function count_activities_by_date(PDO $db, string $date): int
+function count_activities_by_date(PDO $db, int $childId, string $date): int
 {
-    $stmt = $db->prepare('SELECT COUNT(*) FROM activities WHERE activity_date = ?');
-    $stmt->execute([$date]);
+    $stmt = $db->prepare('SELECT COUNT(*) FROM activities WHERE child_id = ? AND activity_date = ?');
+    $stmt->execute([$childId, $date]);
 
     return (int) $stmt->fetchColumn();
 }
@@ -211,7 +475,7 @@ function delete_reward(PDO $db, int $id): void
     $stmt->execute([$id]);
 }
 
-function fetch_activity_totals(PDO $db): array
+function fetch_activity_totals(PDO $db, int $childId): array
 {
     $sql = "
         SELECT
@@ -220,10 +484,12 @@ function fetch_activity_totals(PDO $db): array
             COALESCE(SUM(CASE WHEN strftime('%Y-%W', activity_date) = strftime('%Y-%W', 'now', 'localtime') THEN stars ELSE 0 END), 0) AS week_stars,
             COALESCE(SUM(CASE WHEN substr(activity_date, 1, 7) = strftime('%Y-%m', 'now', 'localtime') THEN stars ELSE 0 END), 0) AS month_stars
         FROM activities
-        WHERE status IN ('ok', 'good', 'excellent')
+        WHERE child_id = ? AND status IN ('ok', 'good', 'excellent')
     ";
 
-    $row = $db->query($sql)->fetch(PDO::FETCH_ASSOC);
+    $stmt = $db->prepare($sql);
+    $stmt->execute([$childId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
     return [
         'total_earned' => (int) ($row['total_earned'] ?? 0),
@@ -233,53 +499,57 @@ function fetch_activity_totals(PDO $db): array
     ];
 }
 
-function fetch_total_spent(PDO $db): int
+function fetch_total_spent(PDO $db, int $childId): int
 {
-    return (int) $db->query('SELECT COALESCE(SUM(cost), 0) FROM rewards')->fetchColumn();
+    $stmt = $db->prepare('SELECT COALESCE(SUM(cost), 0) FROM rewards WHERE child_id = ?');
+    $stmt->execute([$childId]);
+
+    return (int) $stmt->fetchColumn();
 }
 
-function fetch_activities(PDO $db, int $limit = 30): array
+function fetch_activities(PDO $db, int $childId, int $limit = 30): array
 {
-    $stmt = $db->prepare('SELECT * FROM activities ORDER BY activity_date DESC, created_at DESC, id DESC LIMIT ?');
-    $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+    $stmt = $db->prepare('SELECT * FROM activities WHERE child_id = ? ORDER BY activity_date DESC, created_at DESC, id DESC LIMIT ?');
+    $stmt->bindValue(1, $childId, PDO::PARAM_INT);
+    $stmt->bindValue(2, $limit, PDO::PARAM_INT);
     $stmt->execute();
 
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function fetch_today_activities(PDO $db): array
+function fetch_today_activities(PDO $db, int $childId): array
 {
-    $stmt = $db->prepare("SELECT * FROM activities WHERE activity_date = date('now', 'localtime') ORDER BY created_at DESC, id DESC");
-    $stmt->execute();
+    $stmt = $db->prepare("SELECT * FROM activities WHERE child_id = ? AND activity_date = date('now', 'localtime') ORDER BY created_at DESC, id DESC");
+    $stmt->execute([$childId]);
 
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function fetch_activities_between(PDO $db, string $startDate, string $endDate): array
+function fetch_activities_between(PDO $db, int $childId, string $startDate, string $endDate): array
 {
     $stmt = $db->prepare(
-        'SELECT * FROM activities WHERE activity_date BETWEEN ? AND ? ORDER BY activity_date DESC, created_at DESC, id DESC'
+        'SELECT * FROM activities WHERE child_id = ? AND activity_date BETWEEN ? AND ? ORDER BY activity_date DESC, created_at DESC, id DESC'
     );
-    $stmt->execute([$startDate, $endDate]);
+    $stmt->execute([$childId, $startDate, $endDate]);
 
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function upsert_holiday(PDO $db, string $date, string $type, string $note): int
+function upsert_holiday(PDO $db, int $familyId, string $date, string $type, string $note): int
 {
     $stmt = $db->prepare(
-        'INSERT INTO holidays(holiday_date, type, note) VALUES(?, ?, ?)
-         ON CONFLICT(holiday_date) DO UPDATE SET type = excluded.type, note = excluded.note'
+        'INSERT INTO holidays(family_id, holiday_date, type, note) VALUES(?, ?, ?, ?)
+         ON CONFLICT(family_id, holiday_date) DO UPDATE SET type = excluded.type, note = excluded.note'
     );
-    $stmt->execute([$date, $type, $note]);
+    $stmt->execute([$familyId, $date, $type, $note]);
 
     $id = (int) $db->lastInsertId();
     if ($id > 0) {
         return $id;
     }
 
-    $find = $db->prepare('SELECT id FROM holidays WHERE holiday_date = ?');
-    $find->execute([$date]);
+    $find = $db->prepare('SELECT id FROM holidays WHERE family_id = ? AND holiday_date = ?');
+    $find->execute([$familyId, $date]);
 
     return (int) $find->fetchColumn();
 }
@@ -306,35 +576,38 @@ function find_holiday(PDO $db, int $id): ?array
     return $row ?: null;
 }
 
-function find_holiday_by_date(PDO $db, string $date): ?array
+function find_holiday_by_date(PDO $db, int $familyId, string $date): ?array
 {
-    $stmt = $db->prepare('SELECT * FROM holidays WHERE holiday_date = ?');
-    $stmt->execute([$date]);
+    $stmt = $db->prepare('SELECT * FROM holidays WHERE family_id = ? AND holiday_date = ?');
+    $stmt->execute([$familyId, $date]);
 
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
     return $row ?: null;
 }
 
-function fetch_holidays(PDO $db, int $limit = 60): array
+function fetch_holidays(PDO $db, int $familyId, int $limit = 60): array
 {
-    $stmt = $db->prepare('SELECT * FROM holidays ORDER BY holiday_date DESC LIMIT ?');
-    $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+    $stmt = $db->prepare('SELECT * FROM holidays WHERE family_id = ? ORDER BY holiday_date DESC LIMIT ?');
+    $stmt->bindValue(1, $familyId, PDO::PARAM_INT);
+    $stmt->bindValue(2, $limit, PDO::PARAM_INT);
     $stmt->execute();
 
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function fetch_holidays_between(PDO $db, string $startDate, string $endDate): array
+function fetch_holidays_between(PDO $db, int $familyId, string $startDate, string $endDate): array
 {
-    $stmt = $db->prepare('SELECT * FROM holidays WHERE holiday_date BETWEEN ? AND ? ORDER BY holiday_date DESC');
-    $stmt->execute([$startDate, $endDate]);
+    $stmt = $db->prepare('SELECT * FROM holidays WHERE family_id = ? AND holiday_date BETWEEN ? AND ? ORDER BY holiday_date DESC');
+    $stmt->execute([$familyId, $startDate, $endDate]);
 
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 function insert_weekly_goal(
     PDO $db,
+    int $familyId,
+    int $childId,
     string $weekStart,
     string $title,
     int $dailyTarget,
@@ -343,9 +616,9 @@ function insert_weekly_goal(
     string $note
 ): int {
     $stmt = $db->prepare(
-        'INSERT INTO weekly_goals(week_start, title, daily_target, target_amount, unit_label, note) VALUES(?, ?, ?, ?, ?, ?)'
+        'INSERT INTO weekly_goals(family_id, child_id, week_start, title, daily_target, target_amount, unit_label, note) VALUES(?, ?, ?, ?, ?, ?, ?, ?)'
     );
-    $stmt->execute([$weekStart, $title, $dailyTarget, $targetAmount, $unitLabel, $note]);
+    $stmt->execute([$familyId, $childId, $weekStart, $title, $dailyTarget, $targetAmount, $unitLabel, $note]);
 
     return (int) $db->lastInsertId();
 }
@@ -372,23 +645,26 @@ function delete_weekly_goal(PDO $db, int $id): void
     $stmt->execute([$id]);
 }
 
-function fetch_weekly_goals(PDO $db, string $weekStart): array
+function fetch_weekly_goals(PDO $db, int $childId, string $weekStart): array
 {
-    $stmt = $db->prepare('SELECT * FROM weekly_goals WHERE week_start = ? ORDER BY id DESC');
-    $stmt->execute([$weekStart]);
+    $stmt = $db->prepare('SELECT * FROM weekly_goals WHERE child_id = ? AND week_start = ? ORDER BY id DESC');
+    $stmt->execute([$childId, $weekStart]);
 
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function fetch_child_profile(PDO $db): array
+function fetch_child_profile(PDO $db, int $childId): array
 {
-    $row = $db->query('SELECT * FROM child_profiles WHERE id = 1')->fetch(PDO::FETCH_ASSOC);
+    $stmt = $db->prepare('SELECT * FROM children WHERE id = ?');
+    $stmt->execute([$childId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
     return $row ?: [];
 }
 
 function upsert_child_profile(
     PDO $db,
+    int $childId,
     string $nickname,
     string $fullName,
     string $birthday,
@@ -398,25 +674,16 @@ function upsert_child_profile(
     string $profileNote
 ): void {
     $stmt = $db->prepare(
-        'INSERT INTO child_profiles(id, nickname, full_name, birthday, class_name, favorite_subject, hobby, profile_note, updated_at)
-         VALUES(1, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-         ON CONFLICT(id) DO UPDATE SET
-            nickname = excluded.nickname,
-            full_name = excluded.full_name,
-            birthday = excluded.birthday,
-            class_name = excluded.class_name,
-            favorite_subject = excluded.favorite_subject,
-            hobby = excluded.hobby,
-            profile_note = excluded.profile_note,
-            updated_at = CURRENT_TIMESTAMP'
+        'UPDATE children SET nickname = ?, full_name = ?, birthday = ?, class_name = ?, favorite_subject = ?, hobby = ?, profile_note = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
     );
-    $stmt->execute([$nickname, $fullName, $birthday, $className, $favoriteSubject, $hobby, $profileNote]);
+    $stmt->execute([$nickname, $fullName, $birthday, $className, $favoriteSubject, $hobby, $profileNote, $childId]);
 }
 
-function fetch_rewards(PDO $db, int $limit = 30): array
+function fetch_rewards(PDO $db, int $childId, int $limit = 30): array
 {
-    $stmt = $db->prepare('SELECT * FROM rewards ORDER BY reward_date DESC, id DESC LIMIT ?');
-    $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+    $stmt = $db->prepare('SELECT * FROM rewards WHERE child_id = ? ORDER BY reward_date DESC, id DESC LIMIT ?');
+    $stmt->bindValue(1, $childId, PDO::PARAM_INT);
+    $stmt->bindValue(2, $limit, PDO::PARAM_INT);
     $stmt->execute();
 
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -424,6 +691,8 @@ function fetch_rewards(PDO $db, int $limit = 30): array
 
 function insert_audit_log(
     PDO $db,
+    ?int $familyId,
+    ?int $childId,
     string $actor,
     string $action,
     string $entityType,
@@ -432,15 +701,16 @@ function insert_audit_log(
 ): void
 {
     $stmt = $db->prepare(
-        'INSERT INTO audit_logs(actor, action, entity_type, entity_id, description) VALUES(?, ?, ?, ?, ?)'
+        'INSERT INTO audit_logs(family_id, child_id, actor, action, entity_type, entity_id, description) VALUES(?, ?, ?, ?, ?, ?, ?)'
     );
-    $stmt->execute([$actor, $action, $entityType, $entityId, $description]);
+    $stmt->execute([$familyId, $childId, $actor, $action, $entityType, $entityId, $description]);
 }
 
-function fetch_audit_logs(PDO $db, int $limit = 50): array
+function fetch_audit_logs(PDO $db, int $familyId, int $limit = 50): array
 {
-    $stmt = $db->prepare('SELECT * FROM audit_logs ORDER BY id DESC LIMIT ?');
-    $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+    $stmt = $db->prepare('SELECT * FROM audit_logs WHERE family_id = ? ORDER BY id DESC LIMIT ?');
+    $stmt->bindValue(1, $familyId, PDO::PARAM_INT);
+    $stmt->bindValue(2, $limit, PDO::PARAM_INT);
     $stmt->execute();
 
     return $stmt->fetchAll(PDO::FETCH_ASSOC);

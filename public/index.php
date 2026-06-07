@@ -13,6 +13,7 @@ handle_request($db, $config);
 
 $parentLoggedIn = is_parent_logged_in();
 $childLoggedIn = is_child_logged_in();
+$adminLoggedIn = is_admin_logged_in();
 $activityOptions = $config['activity_options'];
 $activityCategories = $config['activity_categories'];
 $penaltyOptions = $config['penalty_options'];
@@ -43,7 +44,8 @@ if (!is_app_logged_in()): ?>
       <h2>👧 Đăng nhập cho con</h2>
       <form class="parent-login-form" method="post">
         <input type="hidden" name="action" value="child_login">
-        <input type="password" name="child_password" placeholder="Mật khẩu của con" required autofocus>
+        <input name="child_username" placeholder="Tài khoản của con" value="child" autofocus>
+        <input type="password" name="child_password" placeholder="Mật khẩu của con" required>
         <button class="btn green">Vào bảng sao</button>
       </form>
     </div>
@@ -51,8 +53,17 @@ if (!is_app_logged_in()): ?>
       <h2>🔐 Đăng nhập bố mẹ</h2>
       <form class="parent-login-form" method="post">
         <input type="hidden" name="action" value="parent_login">
+        <input name="parent_username" placeholder="Tài khoản bố mẹ" value="parent">
         <input type="password" name="parent_password" placeholder="Mật khẩu bố mẹ" required>
         <button class="btn blue">Đăng nhập</button>
+      </form>
+    </div>
+    <div class="card">
+      <h2>🛠️ Đăng nhập quản trị</h2>
+      <form class="parent-login-form" method="post">
+        <input type="hidden" name="action" value="admin_login">
+        <input type="password" name="admin_password" placeholder="Mật khẩu quản trị" required>
+        <button class="btn">Quản lý đăng ký</button>
       </form>
     </div>
   </div>
@@ -61,26 +72,33 @@ if (!is_app_logged_in()): ?>
 </body></html>
 <?php exit; endif;
 
+$currentFamilyId = get_current_family_id($db);
+$currentChildId = get_current_child_id($db);
+$currentFamily = find_family($db, $currentFamilyId) ?: [];
+$childrenInFamily = fetch_children($db, $currentFamilyId);
+$allFamilies = $adminLoggedIn ? fetch_families($db) : [];
+$allChildren = $adminLoggedIn ? fetch_children($db) : [];
+
 $dashboard = build_dashboard_stats(
-    fetch_activity_totals($db),
-    fetch_total_spent($db),
+    fetch_activity_totals($db, $currentChildId),
+    fetch_total_spent($db, $currentChildId),
     $rewardOptions
 );
-$childProfile = fetch_child_profile($db);
+$childProfile = fetch_child_profile($db, $currentChildId);
 $childDisplayName = get_child_display_name($childProfile);
-$activities = fetch_activities($db);
-$todayActivities = fetch_today_activities($db);
-$recentActivities = fetch_activities_between($db, date('Y-m-d', strtotime('-30 days')), date('Y-m-d'));
+$activities = fetch_activities($db, $currentChildId);
+$todayActivities = fetch_today_activities($db, $currentChildId);
+$recentActivities = fetch_activities_between($db, $currentChildId, date('Y-m-d', strtotime('-30 days')), date('Y-m-d'));
 $currentWeekStart = get_week_start();
 $currentWeekEnd = get_week_end($currentWeekStart);
-$weeklyGoals = fetch_weekly_goals($db, $currentWeekStart);
-$todayHoliday = find_holiday_by_date($db, date('Y-m-d'));
-$recentHolidays = fetch_holidays_between($db, date('Y-m-d', strtotime('-30 days')), date('Y-m-d'));
-$holidaysByDate = group_holidays_by_date(fetch_holidays_between($db, date('Y-m-d', strtotime('-90 days')), date('Y-m-d', strtotime('+90 days'))));
+$weeklyGoals = fetch_weekly_goals($db, $currentChildId, $currentWeekStart);
+$todayHoliday = find_holiday_by_date($db, $currentFamilyId, date('Y-m-d'));
+$recentHolidays = fetch_holidays_between($db, $currentFamilyId, date('Y-m-d', strtotime('-30 days')), date('Y-m-d'));
+$holidaysByDate = group_holidays_by_date(fetch_holidays_between($db, $currentFamilyId, date('Y-m-d', strtotime('-90 days')), date('Y-m-d', strtotime('+90 days'))));
 $dashboardCoach = build_dashboard_coach($todayActivities, $recentActivities, $config, $todayHoliday, $recentHolidays);
-$rewards = fetch_rewards($db);
-$holidays = $parentLoggedIn ? fetch_holidays($db) : [];
-$auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
+$rewards = fetch_rewards($db, $currentChildId);
+$holidays = $parentLoggedIn ? fetch_holidays($db, $currentFamilyId) : [];
+$auditLogs = $parentLoggedIn ? fetch_audit_logs($db, $currentFamilyId) : [];
 ?>
 <!doctype html>
 <html lang="vi">
@@ -95,6 +113,7 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
   <div class="hero">
     <h1>🌈 BẢNG SAO MÙA HÈ ⭐</h1>
     <div class="profile-hello">Xin chào, <?=h($childDisplayName)?>!</div>
+    <div class="sub"><?=h($currentFamily['family_name'] ?? 'Gia đình')?></div>
     <div class="sub">Học tốt · Vui khỏe · Tự lập · Sáng tạo · Ít màn hình</div>
     <p>Mỗi ngày cố gắng hơn hôm qua một chút nhé!</p>
     <div class="stars">Hiện có: <span data-dashboard-value="current_stars" data-suffix="★"><?=h($dashboard['current_stars'])?>★</span></div>
@@ -148,9 +167,21 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
         <span class="notice inline-notice">Đã đăng nhập quyền bố mẹ.</span>
         <button class="btn small blue">Đăng xuất</button>
       </form>
+      <?php if (count($childrenInFamily) > 1): ?>
+        <form class="switch-child-form" method="post">
+          <input type="hidden" name="action" value="switch_child_dashboard">
+          <label><b>Dashboard của con</b><select name="child_id">
+            <?php foreach ($childrenInFamily as $child): ?>
+              <option value="<?=h($child['id'])?>" <?=((int) $child['id'] === $currentChildId) ? 'selected' : ''?>><?=h(get_child_display_name($child))?> (<?=h($child['username'])?>)</option>
+            <?php endforeach; ?>
+          </select></label>
+          <button class="btn small green">Chuyển</button>
+        </form>
+      <?php endif; ?>
     <?php else: ?>
       <form class="parent-login-form" method="post">
         <input type="hidden" name="action" value="parent_login">
+        <input name="parent_username" placeholder="Tài khoản bố mẹ" value="parent">
         <input type="password" name="parent_password" placeholder="Mật khẩu bố mẹ" required>
         <button class="btn small blue">Đăng nhập</button>
       </form>
@@ -168,6 +199,70 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
       <div class="muted">Con chưa đăng nhập. Bố mẹ đang xem bằng quyền bố mẹ.</div>
     <?php endif; ?>
   </div>
+  <?php if ($adminLoggedIn): ?>
+    <div class="card admin-card no-print" style="margin-top:18px">
+      <div class="section-head">
+        <div>
+          <h2>🛠️ Quản trị đăng ký gia đình</h2>
+          <div class="muted">Mỗi gia đình có tài khoản bố mẹ; mỗi con có tài khoản, profile và dashboard riêng.</div>
+        </div>
+        <form method="post">
+          <input type="hidden" name="action" value="admin_logout">
+          <button class="btn small red">Đăng xuất quản trị</button>
+        </form>
+      </div>
+      <div class="admin-forms">
+        <form method="post">
+          <input type="hidden" name="action" value="add_family">
+          <h3>Tạo gia đình</h3>
+          <input name="family_name" placeholder="Tên gia đình" required>
+          <input name="parent_name" placeholder="Tên bố/mẹ">
+          <input name="parent_username" placeholder="Tài khoản bố mẹ" required>
+          <input name="parent_password_new" placeholder="Mật khẩu bố mẹ" required>
+          <textarea name="family_note" placeholder="Ghi chú đăng ký"></textarea>
+          <button class="btn blue">Tạo gia đình</button>
+        </form>
+        <form method="post">
+          <input type="hidden" name="action" value="add_child_account">
+          <h3>Tạo tài khoản con</h3>
+          <select name="child_family_id" required>
+            <?php foreach ($allFamilies as $family): ?>
+              <option value="<?=h($family['id'])?>"><?=h($family['family_name'])?> (<?=h($family['parent_username'])?>)</option>
+            <?php endforeach; ?>
+          </select>
+          <input name="child_username_new" placeholder="Tài khoản con" required>
+          <input name="child_password_new" placeholder="Mật khẩu con" required>
+          <input name="child_nickname_new" placeholder="Nickname">
+          <input name="child_full_name_new" placeholder="Họ tên con">
+          <button class="btn green">Tạo tài khoản con</button>
+        </form>
+      </div>
+      <div class="table-wrap admin-table"><table class="table">
+        <tr><th>Gia đình</th><th>Bố mẹ</th><th>Tài khoản bố mẹ</th><th>Các con</th></tr>
+        <?php foreach ($allFamilies as $family): ?>
+          <tr>
+            <td><b><?=h($family['family_name'])?></b><div class="muted"><?=h($family['note'] ?? '')?></div></td>
+            <td><?=h($family['parent_name'] ?? '')?></td>
+            <td><?=h($family['parent_username'])?></td>
+            <td>
+              <?php foreach ($allChildren as $child): if ((int) $child['family_id'] !== (int) $family['id']) { continue; } ?>
+                <form class="child-account-row" method="post">
+                  <input type="hidden" name="action" value="update_child_account_status">
+                  <input type="hidden" name="child_id" value="<?=h($child['id'])?>">
+                  <span><b><?=h(get_child_display_name($child))?></b> · <?=h($child['username'])?> · <?=((int) $child['active'] === 1) ? 'đang mở' : 'đã khóa'?></span>
+                  <select name="child_active">
+                    <option value="1" <?=((int) $child['active'] === 1) ? 'selected' : ''?>>Mở</option>
+                    <option value="0" <?=((int) $child['active'] === 0) ? 'selected' : ''?>>Khóa</option>
+                  </select>
+                  <button class="btn small blue">Lưu</button>
+                </form>
+              <?php endforeach; ?>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+      </table></div>
+    </div>
+  <?php endif; ?>
   <div class="card profile-card" style="margin-top:18px">
     <div class="section-head">
       <div>

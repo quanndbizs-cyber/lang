@@ -56,14 +56,19 @@ function is_child_logged_in(): bool
     return !empty($_SESSION['child_logged_in']);
 }
 
+function is_admin_logged_in(): bool
+{
+    return !empty($_SESSION['admin_logged_in']);
+}
+
 function is_app_logged_in(): bool
 {
-    return is_parent_logged_in() || is_child_logged_in();
+    return is_parent_logged_in() || is_child_logged_in() || is_admin_logged_in();
 }
 
 function require_parent_login(): void
 {
-    if (is_parent_logged_in()) {
+    if (is_parent_logged_in() || is_admin_logged_in()) {
         return;
     }
 
@@ -75,6 +80,16 @@ function require_parent_login(): void
     }
 
     $_SESSION['msg'] = 'Bố mẹ cần đăng nhập để thực hiện thao tác này.';
+    redirect_home();
+}
+
+function require_admin_login(): void
+{
+    if (is_admin_logged_in()) {
+        return;
+    }
+
+    $_SESSION['msg'] = 'Người quản trị cần đăng nhập để quản lý đăng ký gia đình.';
     redirect_home();
 }
 
@@ -93,6 +108,44 @@ function require_child_or_parent_login(): void
 
     $_SESSION['msg'] = 'Cần đăng nhập để thực hiện thao tác này.';
     redirect_home();
+}
+
+function get_current_family_id(PDO $db): int
+{
+    if (!empty($_SESSION['family_id'])) {
+        return (int) $_SESSION['family_id'];
+    }
+
+    $familyId = get_default_family_id($db);
+    $_SESSION['family_id'] = $familyId;
+
+    return $familyId;
+}
+
+function get_current_child_id(PDO $db): int
+{
+    if (!empty($_SESSION['child_id'])) {
+        return (int) $_SESSION['child_id'];
+    }
+
+    $familyId = get_current_family_id($db);
+    $childId = get_default_child_id($db, $familyId);
+    $_SESSION['child_id'] = $childId;
+
+    return $childId;
+}
+
+function set_active_child_session(array $child): void
+{
+    $_SESSION['family_id'] = (int) $child['family_id'];
+    $_SESSION['child_id'] = (int) $child['id'];
+}
+
+function verify_admin_password(string $password, array $config): bool
+{
+    $expected = (string) (getenv('ADMIN_PASSWORD') ?: ($config['admin_password'] ?? $config['parent_password'] ?? ''));
+
+    return $expected !== '' && hash_equals($expected, $password);
 }
 
 function verify_parent_password(string $password, array $config): bool
@@ -247,13 +300,13 @@ function parse_form_date(?string $date, string $fieldLabel): string
     return $date;
 }
 
-function ensure_activity_daily_limit(PDO $db, string $date, int $newActivityCount, int $maxActivities = 12): void
+function ensure_activity_daily_limit(PDO $db, int $childId, string $date, int $newActivityCount, int $maxActivities = 12): void
 {
     if ($newActivityCount <= 0) {
         return;
     }
 
-    $currentCount = count_activities_by_date($db, $date);
+    $currentCount = count_activities_by_date($db, $childId, $date);
     if ($currentCount + $newActivityCount > $maxActivities) {
         $remaining = max(0, $maxActivities - $currentCount);
         $_SESSION['msg'] = "Một ngày chỉ được ghi tối đa {$maxActivities} hoạt động. Hôm nay còn có thể thêm {$remaining} hoạt động.";
