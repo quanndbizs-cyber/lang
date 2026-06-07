@@ -8,6 +8,9 @@ body{margin:0;font-family:Arial,"Segoe UI",sans-serif;background:linear-gradient
 .coach-main h2{margin:4px 0 8px;color:#18864b;font-size:24px;line-height:1.25}
 .coach-greeting{font-size:18px;font-weight:800;color:#0b74d1}
 .coach-summary{background:#f6fbff;border:2px dashed #d9f0ff;border-radius:16px;padding:10px;font-weight:700;color:#455a64}
+.holiday-banner{display:grid;gap:4px;background:#fff8e1;border:2px solid #ffd65a;border-radius:16px;padding:10px;margin:8px 0}
+.holiday-banner b{color:#ef6c00}
+.holiday-banner span,.holiday-banner em{color:#455a64;font-weight:700}
 .coach-praise,.coach-reminder{margin-top:10px;font-weight:800;color:#2e7d32}
 .coach-reminder{color:#ef6c00}
 .missing-list{margin:8px 0 0;padding-left:22px}
@@ -18,6 +21,12 @@ body{margin:0;font-family:Arial,"Segoe UI",sans-serif;background:linear-gradient
 .screen-status span{font-weight:700;color:#455a64}
 .screen-status.screen-rest{background:#fff3e0;border-color:#ffcc80}
 .screen-status.screen-rest b{color:#d84315}
+.holiday-form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:10px;align-items:end}
+.holiday-form p{margin:0}
+.holiday-table{margin-top:14px}
+.holiday-badge{display:inline-block;background:#fff8e1;border:1px solid #ffd65a;border-radius:999px;padding:4px 8px;margin-top:4px;font-size:12px;font-weight:800;color:#ef6c00}
+.holiday-actions{display:flex;gap:8px;align-items:center}
+.holiday-row-form{display:inline}
 .quick-card{border-color:#ffd7e7;background:linear-gradient(180deg,#fffdf7,#fff5fb)}
 .quick-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:14px}
 .quick-date{display:flex;align-items:center;gap:10px}
@@ -77,6 +86,6 @@ body{margin:0;font-family:Arial,"Segoe UI",sans-serif;background:linear-gradient
 .history-edit textarea{min-height:52px;padding:8px}
 .small-photo{width:58px;height:46px}
 .empty-state{background:#f6fbff;border:2px dashed #d9f0ff;border-radius:18px;padding:16px;text-align:center;color:#607d8b;font-weight:bold}
-@media(max-width:850px){.grid,.stat-grid,.two-col,.quick-grid,.quick-head,.quick-fields,.quick-proof,.form-row,.parent-login-form,.auth-grid,.coach-card{grid-template-columns:1fr}.coach-main h2{font-size:21px}.quick-head{display:grid}.quick-date{display:grid;gap:6px}.quick-date input{min-width:0}.quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.today-item{grid-template-columns:auto 1fr auto}.today-item .photo{grid-column:2/4}.child-edit-form{grid-column:1/4;grid-template-columns:1fr}.history-table th,.history-table td{padding:7px 6px}.history-table .mobile-hide{display:none}.history-mobile-meta{display:block}.history-table .photo{width:58px;height:46px}h1{font-size:32px}.hero:before,.hero:after{font-size:28px}.stars{font-size:34px}.wrap{padding:10px}.card{padding:14px}}
+@media(max-width:850px){.grid,.stat-grid,.two-col,.quick-grid,.quick-head,.quick-fields,.quick-proof,.form-row,.parent-login-form,.auth-grid,.coach-card,.holiday-form{grid-template-columns:1fr}.coach-main h2{font-size:21px}.holiday-actions{display:grid}.quick-head{display:grid}.quick-date{display:grid;gap:6px}.quick-date input{min-width:0}.quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.today-item{grid-template-columns:auto 1fr auto}.today-item .photo{grid-column:2/4}.child-edit-form{grid-column:1/4;grid-template-columns:1fr}.history-table th,.history-table td{padding:7px 6px}.history-table .mobile-hide{display:none}.history-mobile-meta{display:block}.history-table .photo{width:58px;height:46px}h1{font-size:32px}.hero:before,.hero:after{font-size:28px}.stars{font-size:34px}.wrap{padding:10px}.card{padding:14px}}
 @media(max-width:850px) and (orientation:landscape){.history-table .history-parent-feedback-col,.history-table .history-actions-col{display:table-cell}.history-parent-feedback-col{min-width:210px}.history-actions-col{min-width:170px}.history-table .parent-feedback{min-width:190px}.history-table input,.history-table select,.history-table textarea{font-size:13px;padding:7px}.history-table .btn.small{font-size:12px;padding:6px 8px}}
 @media print{.no-print{display:none}.print-feedback{display:block}.wrap{max-width:none}.grid{grid-template-columns:1fr 1fr}.card{break-inside:avoid}body{background:white}.hero{box-shadow:none}.table-wrap{overflow:visible}}

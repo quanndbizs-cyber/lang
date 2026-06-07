@@ -43,6 +43,29 @@ return [
         'weekday' => ['study_2h', 'read_book', 'exercise', 'housework', 'clean_room', 'screen_ok'],
         'weekend' => ['read_book', 'exercise', 'housework', 'clean_room', 'screen_ok'],
     ],
+    'holiday_types' => [
+        'skip_all' => [
+            'label' => 'Nghỉ toàn bộ lịch hè',
+            'description' => 'Hôm nay nghỉ lịch hè, không tính thiếu việc.',
+            'required_activity_keys' => [],
+            'screen_limit_minutes' => 120,
+            'rest_after_hour' => 21,
+        ],
+        'basic_only' => [
+            'label' => 'Chỉ việc cá nhân cơ bản',
+            'description' => 'Giữ vài việc tự chăm sóc bản thân, bỏ các việc học nặng.',
+            'required_activity_keys' => ['housework', 'clean_room', 'screen_ok'],
+            'screen_limit_minutes' => 90,
+            'rest_after_hour' => 21,
+        ],
+        'short_schedule' => [
+            'label' => 'Lịch rút gọn',
+            'description' => 'Làm ít việc hơn ngày thường để vẫn giữ nhịp tốt.',
+            'required_activity_keys' => ['read_book', 'exercise', 'screen_ok'],
+            'screen_limit_minutes' => 90,
+            'rest_after_hour' => 21,
+        ],
+    ],
     'screen_time' => [
         'daily_limit_minutes' => 60,
         'rest_after_hour' => 21,

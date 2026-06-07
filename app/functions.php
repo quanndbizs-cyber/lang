@@ -190,6 +190,19 @@ function require_today_date(?string $date, string $fieldLabel = 'ngày chọn'):
     return $date;
 }
 
+function parse_form_date(?string $date, string $fieldLabel): string
+{
+    $date = trim((string) $date);
+    $parsed = DateTimeImmutable::createFromFormat('!Y-m-d', $date);
+
+    if ($date === '' || !$parsed || $parsed->format('Y-m-d') !== $date) {
+        $_SESSION['msg'] = "Vui lòng chọn {$fieldLabel} hợp lệ.";
+        redirect_home();
+    }
+
+    return $date;
+}
+
 function ensure_activity_daily_limit(PDO $db, string $date, int $newActivityCount, int $maxActivities = 12): void
 {
     if ($newActivityCount <= 0) {
@@ -335,12 +348,65 @@ function get_day_part_greeting(?int $hour = null): string
     return 'Chào buổi tối! Mình cùng tổng kết ngày hôm nay nhé.';
 }
 
-function get_required_activity_keys_for_date(array $config, string $date): array
+function sanitize_holiday_type(string $type, array $config): string
 {
+    return isset($config['holiday_types'][$type]) ? $type : 'skip_all';
+}
+
+function get_holiday_type_label(?array $holiday, array $config): string
+{
+    if (!$holiday) {
+        return '';
+    }
+
+    $type = sanitize_holiday_type((string) ($holiday['type'] ?? ''), $config);
+
+    return (string) ($config['holiday_types'][$type]['label'] ?? $type);
+}
+
+function group_holidays_by_date(array $holidays): array
+{
+    $grouped = [];
+
+    foreach ($holidays as $holiday) {
+        $date = (string) ($holiday['holiday_date'] ?? '');
+        if ($date !== '') {
+            $grouped[$date] = $holiday;
+        }
+    }
+
+    return $grouped;
+}
+
+function get_required_activity_keys_for_date(array $config, string $date, ?array $holiday = null): array
+{
+    if ($holiday) {
+        $type = sanitize_holiday_type((string) ($holiday['type'] ?? ''), $config);
+        return array_values($config['holiday_types'][$type]['required_activity_keys'] ?? []);
+    }
+
     $required = $config['daily_required_activity_keys'] ?? [];
     $dayType = ((int) date('N', strtotime($date)) >= 6) ? 'weekend' : 'weekday';
 
     return array_values(array_filter($required[$dayType] ?? []));
+}
+
+function get_screen_time_config_for_day(array $config, ?array $holiday = null): array
+{
+    if ($holiday) {
+        $type = sanitize_holiday_type((string) ($holiday['type'] ?? ''), $config);
+        $holidayConfig = $config['holiday_types'][$type] ?? [];
+
+        return [
+            'daily_limit_minutes' => (int) ($holidayConfig['screen_limit_minutes'] ?? ($config['screen_time']['daily_limit_minutes'] ?? 60)),
+            'rest_after_hour' => (int) ($holidayConfig['rest_after_hour'] ?? ($config['screen_time']['rest_after_hour'] ?? 21)),
+        ];
+    }
+
+    return [
+        'daily_limit_minutes' => (int) ($config['screen_time']['daily_limit_minutes'] ?? 60),
+        'rest_after_hour' => (int) ($config['screen_time']['rest_after_hour'] ?? 21),
+    ];
 }
 
 function get_activity_option_label(array $config, string $key): string
@@ -356,9 +422,9 @@ function activity_matches_option(array $activity, array $option): bool
         && (string) ($activity['category'] ?? 'other') === (string) $category;
 }
 
-function analyze_daily_progress(array $activities, array $config, string $date): array
+function analyze_daily_progress(array $activities, array $config, string $date, ?array $holiday = null): array
 {
-    $requiredKeys = get_required_activity_keys_for_date($config, $date);
+    $requiredKeys = get_required_activity_keys_for_date($config, $date, $holiday);
     $completedKeys = [];
     $screenPenaltyCount = 0;
     $completedActivityCount = 0;
@@ -407,17 +473,25 @@ function analyze_daily_progress(array $activities, array $config, string $date):
         'completed_activity_count' => $completedActivityCount,
         'unfinished_activity_count' => $unfinishedActivityCount + count($missingKeys),
         'screen_penalty_count' => $screenPenaltyCount,
+        'is_holiday' => $holiday !== null,
+        'holiday' => $holiday,
         'is_complete' => count($requiredKeys) > 0 && count($missingKeys) === 0,
+        'is_exempt' => $holiday !== null,
     ];
 }
 
-function count_completion_streak(array $activitiesByDate, array $config, string $endDate): int
+function count_completion_streak(array $activitiesByDate, array $config, string $endDate, array $holidaysByDate = []): int
 {
     $streak = 0;
     $cursor = new DateTimeImmutable($endDate);
 
     for ($i = 0; $i < 30; $i++) {
         $date = $cursor->format('Y-m-d');
+        if (isset($holidaysByDate[$date])) {
+            $cursor = $cursor->modify('-1 day');
+            continue;
+        }
+
         $progress = analyze_daily_progress($activitiesByDate[$date] ?? [], $config, $date);
         if (!$progress['is_complete']) {
             break;
@@ -445,16 +519,21 @@ function group_activities_by_date(array $activities): array
     return $grouped;
 }
 
-function build_dashboard_coach(array $todayActivities, array $recentActivities, array $config): array
+function build_dashboard_coach(array $todayActivities, array $recentActivities, array $config, ?array $todayHoliday = null, array $recentHolidays = []): array
 {
     $today = date('Y-m-d');
-    $progress = analyze_daily_progress($todayActivities, $config, $today);
+    $progress = analyze_daily_progress($todayActivities, $config, $today, $todayHoliday);
     $activitiesByDate = group_activities_by_date($recentActivities);
     $activitiesByDate[$today] = $todayActivities;
-    $streak = count_completion_streak($activitiesByDate, $config, $today);
+    $holidaysByDate = group_holidays_by_date($recentHolidays);
+    if ($todayHoliday) {
+        $holidaysByDate[$today] = $todayHoliday;
+    }
+    $streak = count_completion_streak($activitiesByDate, $config, $today, $holidaysByDate);
     $hour = (int) date('G');
-    $restAfterHour = (int) ($config['screen_time']['rest_after_hour'] ?? 21);
-    $screenLimit = (int) ($config['screen_time']['daily_limit_minutes'] ?? 60);
+    $screenConfig = get_screen_time_config_for_day($config, $todayHoliday);
+    $restAfterHour = $screenConfig['rest_after_hour'];
+    $screenLimit = $screenConfig['daily_limit_minutes'];
     $screenNeedsRest = $progress['screen_penalty_count'] > 0 || $hour >= $restAfterHour;
     $screenTitle = 'Chưa nên chơi màn hình';
     $screenMessage = 'Mình làm xong các việc chính trước rồi hãy giải trí nhé.';
@@ -477,9 +556,22 @@ function build_dashboard_coach(array $todayActivities, array $recentActivities, 
         $primaryMessage = "Quá tốt! Con đã giữ chuỗi {$streak} ngày hoàn thành đủ việc.";
     }
 
+    if ($todayHoliday) {
+        $holidayLabel = get_holiday_type_label($todayHoliday, $config);
+        $holidayDescription = (string) ($config['holiday_types'][sanitize_holiday_type((string) $todayHoliday['type'], $config)]['description'] ?? '');
+        $primaryMessage = "Hôm nay là holiday: {$holidayLabel}.";
+        if ($progress['required_count'] === 0) {
+            $screenTitle = 'Ngày nghỉ thoải mái';
+            $screenMessage = "Hôm nay không tính thiếu việc. Màn hình vẫn giữ tối đa {$screenLimit} phút và nghỉ sau {$restAfterHour}h nhé.";
+        }
+    }
+
     return [
         'greeting' => get_day_part_greeting($hour),
         'primary_message' => $primaryMessage,
+        'holiday_label' => $todayHoliday ? get_holiday_type_label($todayHoliday, $config) : '',
+        'holiday_note' => $todayHoliday ? (string) ($todayHoliday['note'] ?? '') : '',
+        'holiday_description' => $todayHoliday ? $holidayDescription : '',
         'progress' => $progress,
         'streak' => $streak,
         'screen_title' => $screenTitle,

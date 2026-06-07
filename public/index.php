@@ -17,6 +17,7 @@ $activityOptions = $config['activity_options'];
 $activityCategories = $config['activity_categories'];
 $penaltyOptions = $config['penalty_options'];
 $rewardOptions = $config['reward_options'];
+$holidayTypes = $config['holiday_types'];
 $parentReviewStatusOptions = parent_review_status_options();
 $appVersion = $config['app_version'] ?? '1.0.0';
 $publicBasePath = $config['public_base_path'] ?? '';
@@ -68,8 +69,12 @@ $dashboard = build_dashboard_stats(
 $activities = fetch_activities($db);
 $todayActivities = fetch_today_activities($db);
 $recentActivities = fetch_activities_between($db, date('Y-m-d', strtotime('-30 days')), date('Y-m-d'));
-$dashboardCoach = build_dashboard_coach($todayActivities, $recentActivities, $config);
+$todayHoliday = find_holiday_by_date($db, date('Y-m-d'));
+$recentHolidays = fetch_holidays_between($db, date('Y-m-d', strtotime('-30 days')), date('Y-m-d'));
+$holidaysByDate = group_holidays_by_date(fetch_holidays_between($db, date('Y-m-d', strtotime('-90 days')), date('Y-m-d', strtotime('+90 days'))));
+$dashboardCoach = build_dashboard_coach($todayActivities, $recentActivities, $config, $todayHoliday, $recentHolidays);
 $rewards = fetch_rewards($db);
+$holidays = $parentLoggedIn ? fetch_holidays($db) : [];
 $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
 ?>
 <!doctype html>
@@ -99,17 +104,26 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
   <div class="coach-card" style="margin-top:18px">
     <div class="coach-main">
       <div class="coach-greeting"><?=h($dashboardCoach['greeting'])?></div>
+      <?php if ($dashboardCoach['holiday_label']): ?>
+        <div class="holiday-banner">
+          <b>Hôm nay là holiday: <?=h($dashboardCoach['holiday_label'])?></b>
+          <span><?=h($dashboardCoach['holiday_description'])?></span>
+          <?php if ($dashboardCoach['holiday_note'] !== ''): ?><em><?=h($dashboardCoach['holiday_note'])?></em><?php endif; ?>
+        </div>
+      <?php endif; ?>
       <h2><?=h($dashboardCoach['primary_message'])?></h2>
       <div class="coach-summary"><?=h($dashboardCoach['daily_summary'])?></div>
       <?php if ($dashboardCoach['progress']['is_complete']): ?>
         <div class="coach-praise">Lời khen hôm nay: con rất tự giác và biết giữ lời hứa với chính mình.</div>
-      <?php else: ?>
+      <?php elseif (!empty($dashboardCoach['progress']['missing_labels'])): ?>
         <div class="coach-reminder">Nhắc nhẹ: mình còn thiếu các việc này.</div>
         <ul class="missing-list">
           <?php foreach ($dashboardCoach['progress']['missing_labels'] as $missingLabel): ?>
             <li><?=h($missingLabel)?></li>
           <?php endforeach; ?>
         </ul>
+      <?php else: ?>
+        <div class="coach-praise">Hôm nay không có việc bắt buộc. Con nghỉ ngơi vui vẻ và vẫn giữ giờ màn hình nhé.</div>
       <?php endif; ?>
       <?php if ($dashboardCoach['streak'] >= 3): ?>
         <div class="streak-badge">Chuỗi hoàn thành: <?=h($dashboardCoach['streak'])?> ngày liên tiếp</div>
@@ -148,6 +162,55 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
       <div class="muted">Con chưa đăng nhập. Bố mẹ đang xem bằng quyền bố mẹ.</div>
     <?php endif; ?>
   </div>
+  <?php if ($parentLoggedIn): ?>
+    <div class="card no-print holiday-card" style="margin-top:18px">
+      <h2>🏖️ Ngày holiday</h2>
+      <form method="post" class="holiday-form">
+        <input type="hidden" name="action" value="add_holiday">
+        <p><b>Từ ngày</b><input type="date" name="holiday_start_date" value="<?=date('Y-m-d')?>" required></p>
+        <p><b>Đến ngày</b><input type="date" name="holiday_end_date" value="<?=date('Y-m-d')?>" required></p>
+        <p><b>Loại holiday</b><select name="holiday_type">
+          <?php foreach ($holidayTypes as $type => $holidayType): ?>
+            <option value="<?=h($type)?>"><?=h($holidayType['label'])?></option>
+          <?php endforeach; ?>
+        </select></p>
+        <p><b>Ghi chú</b><input name="holiday_note" placeholder="Ví dụ: đi chơi cùng gia đình"></p>
+        <button class="btn blue">Lưu holiday</button>
+      </form>
+      <?php if ($holidays): ?>
+        <div class="table-wrap holiday-table"><table class="table"><tr><th>Ngày</th><th>Loại</th><th>Ghi chú</th><th>Thao tác</th></tr>
+          <?php foreach ($holidays as $holiday): ?>
+            <?php $holidayFormId = 'holidayUpdate' . (int) $holiday['id']; ?>
+            <tr>
+              <td><span class="holiday-badge"><?=h($holiday['holiday_date'])?></span></td>
+              <td>
+                <select name="holiday_type" form="<?=h($holidayFormId)?>">
+                  <?php foreach ($holidayTypes as $type => $holidayType): ?>
+                    <option value="<?=h($type)?>" <?=sanitize_holiday_type($holiday['type'] ?? '', $config) === $type ? 'selected' : ''?>><?=h($holidayType['label'])?></option>
+                  <?php endforeach; ?>
+                </select>
+              </td>
+              <td><input name="holiday_note" value="<?=h($holiday['note'] ?? '')?>" placeholder="Ghi chú" form="<?=h($holidayFormId)?>"></td>
+              <td class="holiday-actions">
+                <form method="post" id="<?=h($holidayFormId)?>" class="holiday-row-form">
+                  <input type="hidden" name="action" value="update_holiday">
+                  <input type="hidden" name="holiday_id" value="<?=h($holiday['id'])?>">
+                  <button class="btn small blue">Sửa</button>
+                </form>
+                <form method="post" onsubmit="return confirm('Xóa ngày holiday này?')">
+                  <input type="hidden" name="action" value="delete_holiday">
+                  <input type="hidden" name="holiday_id" value="<?=h($holiday['id'])?>">
+                  <button class="btn small red">Xóa</button>
+                </form>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        </table></div>
+      <?php else: ?>
+        <div class="empty-state">Chưa có ngày holiday nào.</div>
+      <?php endif; ?>
+    </div>
+  <?php endif; ?>
   <div class="card" style="margin-top:18px">
     <div class="two-col"><div><b>Phần thưởng gần đạt nhất: <span data-dashboard-value="next_reward_title"><?=h($dashboard['next_reward_title'])?></span> - <span data-dashboard-value="next_reward_cost" data-suffix="★"><?=h($dashboard['next_reward_cost'])?>★</span></b></div><div style="text-align:right"><span data-dashboard-value="current_stars"><?=h($dashboard['current_stars'])?></span>/<span data-dashboard-value="next_reward_cost" data-suffix="★"><?=h($dashboard['next_reward_cost'])?>★</span></div></div>
     <div class="progress" style="margin-top:8px"><div class="progress-inner" data-dashboard-progress style="width: <?=$dashboard['progress_percent']?>%"></div></div>
@@ -301,8 +364,14 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
       <?php foreach ($activities as $a): ?>
         <?php $feedbackText = ((int) ($a['parent_liked'] ?? 0) === 1 ? '❤️ ' : '') . ($a['parent_comment'] ?? ''); ?>
         <?php $countedStars = get_counted_activity_stars($a); ?>
+        <?php $activityHoliday = $holidaysByDate[$a['activity_date']] ?? null; ?>
         <tr>
-          <td><?=h($a['activity_date'])?></td>
+          <td>
+            <?=h($a['activity_date'])?>
+            <?php if ($activityHoliday): ?>
+              <div class="holiday-badge"><?=h(get_holiday_type_label($activityHoliday, $config))?></div>
+            <?php endif; ?>
+          </td>
           <td class="mobile-hide"><?=h(format_activity_datetime($a['created_at'] ?? ''))?></td>
           <td class="mobile-hide"><span class="history-icon"><?=h(get_activity_icon($a))?></span></td>
           <td class="mobile-hide"><span class="badge"><?=h($activityCategories[$a['category'] ?? 'other'] ?? 'Khác')?></span></td>

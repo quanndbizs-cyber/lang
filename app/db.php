@@ -82,6 +82,16 @@ function initialize_database(PDO $db): void
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )"
     );
+
+    $db->exec(
+        "CREATE TABLE IF NOT EXISTS holidays (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            holiday_date TEXT NOT NULL UNIQUE,
+            type TEXT NOT NULL,
+            note TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )"
+    );
 }
 
 function insert_activity(
@@ -221,6 +231,74 @@ function fetch_activities_between(PDO $db, string $startDate, string $endDate): 
     $stmt = $db->prepare(
         'SELECT * FROM activities WHERE activity_date BETWEEN ? AND ? ORDER BY activity_date DESC, created_at DESC, id DESC'
     );
+    $stmt->execute([$startDate, $endDate]);
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function upsert_holiday(PDO $db, string $date, string $type, string $note): int
+{
+    $stmt = $db->prepare(
+        'INSERT INTO holidays(holiday_date, type, note) VALUES(?, ?, ?)
+         ON CONFLICT(holiday_date) DO UPDATE SET type = excluded.type, note = excluded.note'
+    );
+    $stmt->execute([$date, $type, $note]);
+
+    $id = (int) $db->lastInsertId();
+    if ($id > 0) {
+        return $id;
+    }
+
+    $find = $db->prepare('SELECT id FROM holidays WHERE holiday_date = ?');
+    $find->execute([$date]);
+
+    return (int) $find->fetchColumn();
+}
+
+function update_holiday(PDO $db, int $id, string $type, string $note): void
+{
+    $stmt = $db->prepare('UPDATE holidays SET type = ?, note = ? WHERE id = ?');
+    $stmt->execute([$type, $note, $id]);
+}
+
+function delete_holiday(PDO $db, int $id): void
+{
+    $stmt = $db->prepare('DELETE FROM holidays WHERE id = ?');
+    $stmt->execute([$id]);
+}
+
+function find_holiday(PDO $db, int $id): ?array
+{
+    $stmt = $db->prepare('SELECT * FROM holidays WHERE id = ?');
+    $stmt->execute([$id]);
+
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    return $row ?: null;
+}
+
+function find_holiday_by_date(PDO $db, string $date): ?array
+{
+    $stmt = $db->prepare('SELECT * FROM holidays WHERE holiday_date = ?');
+    $stmt->execute([$date]);
+
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    return $row ?: null;
+}
+
+function fetch_holidays(PDO $db, int $limit = 60): array
+{
+    $stmt = $db->prepare('SELECT * FROM holidays ORDER BY holiday_date DESC LIMIT ?');
+    $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+    $stmt->execute();
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function fetch_holidays_between(PDO $db, string $startDate, string $endDate): array
+{
+    $stmt = $db->prepare('SELECT * FROM holidays WHERE holiday_date BETWEEN ? AND ? ORDER BY holiday_date DESC');
     $stmt->execute([$startDate, $endDate]);
 
     return $stmt->fetchAll(PDO::FETCH_ASSOC);

@@ -52,6 +52,18 @@ function handle_request(PDO $db, array $config): void
         require_parent_login();
         handle_update_activity_parent_edit($db);
     }
+    if ($action === 'add_holiday') {
+        require_parent_login();
+        handle_add_holiday($db, $config);
+    }
+    if ($action === 'update_holiday') {
+        require_parent_login();
+        handle_update_holiday($db, $config);
+    }
+    if ($action === 'delete_holiday') {
+        require_parent_login();
+        handle_delete_holiday($db);
+    }
     if ($action === 'delete_reward') {
         require_parent_login();
         handle_delete_reward($db);
@@ -380,6 +392,66 @@ function handle_update_activity_parent_edit(PDO $db): void
     insert_audit_log($db, 'Bố mẹ', 'updated', 'activity', $id, "Sửa hoạt động {$title} ngày {$activity['activity_date']}.");
     $_SESSION['msg'] = 'Bố mẹ đã cập nhật hoạt động.';
 
+    redirect_home();
+}
+
+function handle_add_holiday(PDO $db, array $config): void
+{
+    $startDate = parse_form_date($_POST['holiday_start_date'] ?? '', 'ngày bắt đầu holiday');
+    $endDate = parse_form_date($_POST['holiday_end_date'] ?? $startDate, 'ngày kết thúc holiday');
+    $type = sanitize_holiday_type((string) ($_POST['holiday_type'] ?? ''), $config);
+    $note = trim((string) ($_POST['holiday_note'] ?? ''));
+    $start = new DateTimeImmutable($startDate);
+    $end = new DateTimeImmutable($endDate);
+
+    if ($end < $start) {
+        $_SESSION['msg'] = 'Ngày kết thúc holiday phải sau hoặc bằng ngày bắt đầu.';
+        redirect_home();
+    }
+
+    $count = 0;
+    for ($cursor = $start; $cursor <= $end; $cursor = $cursor->modify('+1 day')) {
+        $date = $cursor->format('Y-m-d');
+        $holidayId = upsert_holiday($db, $date, $type, $note);
+        insert_audit_log($db, 'Bố mẹ', 'upserted', 'holiday', $holidayId, "Đặt holiday {$date}: " . get_holiday_type_label(['type' => $type], $config) . '.');
+        $count++;
+    }
+
+    $_SESSION['msg'] = "Đã lưu {$count} ngày holiday.";
+    redirect_home();
+}
+
+function handle_update_holiday(PDO $db, array $config): void
+{
+    $id = (int) ($_POST['holiday_id'] ?? 0);
+    $type = sanitize_holiday_type((string) ($_POST['holiday_type'] ?? ''), $config);
+    $note = trim((string) ($_POST['holiday_note'] ?? ''));
+    $holiday = find_holiday($db, $id);
+
+    if (!$holiday) {
+        $_SESSION['msg'] = 'Không tìm thấy ngày holiday để sửa.';
+        redirect_home();
+    }
+
+    update_holiday($db, $id, $type, $note);
+    insert_audit_log($db, 'Bố mẹ', 'updated', 'holiday', $id, "Sửa holiday {$holiday['holiday_date']}: " . get_holiday_type_label(['type' => $type], $config) . '.');
+    $_SESSION['msg'] = 'Đã cập nhật holiday.';
+    redirect_home();
+}
+
+function handle_delete_holiday(PDO $db): void
+{
+    $id = (int) ($_POST['holiday_id'] ?? 0);
+    $holiday = find_holiday($db, $id);
+
+    if (!$holiday) {
+        $_SESSION['msg'] = 'Không tìm thấy ngày holiday để xóa.';
+        redirect_home();
+    }
+
+    delete_holiday($db, $id);
+    insert_audit_log($db, 'Bố mẹ', 'deleted', 'holiday', $id, "Xóa holiday {$holiday['holiday_date']}.");
+    $_SESSION['msg'] = 'Đã xóa holiday.';
     redirect_home();
 }
 
