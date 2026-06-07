@@ -107,6 +107,20 @@ function initialize_database(PDO $db): void
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )"
     );
+
+    $db->exec(
+        "CREATE TABLE IF NOT EXISTS child_profiles (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            nickname TEXT,
+            full_name TEXT,
+            birthday TEXT,
+            class_name TEXT,
+            favorite_subject TEXT,
+            hobby TEXT,
+            profile_note TEXT,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )"
+    );
 }
 
 function insert_activity(
@@ -364,6 +378,39 @@ function fetch_weekly_goals(PDO $db, string $weekStart): array
     $stmt->execute([$weekStart]);
 
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function fetch_child_profile(PDO $db): array
+{
+    $row = $db->query('SELECT * FROM child_profiles WHERE id = 1')->fetch(PDO::FETCH_ASSOC);
+
+    return $row ?: [];
+}
+
+function upsert_child_profile(
+    PDO $db,
+    string $nickname,
+    string $fullName,
+    string $birthday,
+    string $className,
+    string $favoriteSubject,
+    string $hobby,
+    string $profileNote
+): void {
+    $stmt = $db->prepare(
+        'INSERT INTO child_profiles(id, nickname, full_name, birthday, class_name, favorite_subject, hobby, profile_note, updated_at)
+         VALUES(1, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+         ON CONFLICT(id) DO UPDATE SET
+            nickname = excluded.nickname,
+            full_name = excluded.full_name,
+            birthday = excluded.birthday,
+            class_name = excluded.class_name,
+            favorite_subject = excluded.favorite_subject,
+            hobby = excluded.hobby,
+            profile_note = excluded.profile_note,
+            updated_at = CURRENT_TIMESTAMP'
+    );
+    $stmt->execute([$nickname, $fullName, $birthday, $className, $favoriteSubject, $hobby, $profileNote]);
 }
 
 function fetch_rewards(PDO $db, int $limit = 30): array

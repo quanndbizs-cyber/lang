@@ -66,6 +66,8 @@ $dashboard = build_dashboard_stats(
     fetch_total_spent($db),
     $rewardOptions
 );
+$childProfile = fetch_child_profile($db);
+$childDisplayName = get_child_display_name($childProfile);
 $activities = fetch_activities($db);
 $todayActivities = fetch_today_activities($db);
 $recentActivities = fetch_activities_between($db, date('Y-m-d', strtotime('-30 days')), date('Y-m-d'));
@@ -92,6 +94,7 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
 <div class="wrap">
   <div class="hero">
     <h1>🌈 BẢNG SAO MÙA HÈ ⭐</h1>
+    <div class="profile-hello">Xin chào, <?=h($childDisplayName)?>!</div>
     <div class="sub">Học tốt · Vui khỏe · Tự lập · Sáng tạo · Ít màn hình</div>
     <p>Mỗi ngày cố gắng hơn hôm qua một chút nhé!</p>
     <div class="stars">Hiện có: <span data-dashboard-value="current_stars" data-suffix="★"><?=h($dashboard['current_stars'])?>★</span></div>
@@ -164,6 +167,39 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
     <?php else: ?>
       <div class="muted">Con chưa đăng nhập. Bố mẹ đang xem bằng quyền bố mẹ.</div>
     <?php endif; ?>
+  </div>
+  <div class="card profile-card" style="margin-top:18px">
+    <div class="section-head">
+      <div>
+        <h2>👤 Profile cá nhân</h2>
+        <div class="muted">Con có thể tự cập nhật nickname và thông tin riêng.</div>
+      </div>
+      <div class="profile-name"><?=h($childDisplayName)?></div>
+    </div>
+    <div class="profile-summary">
+      <div><b>Họ tên</b><span><?=h($childProfile['full_name'] ?? 'Chưa nhập')?></span></div>
+      <div><b>Ngày sinh</b><span><?=h($childProfile['birthday'] ?? 'Chưa nhập')?></span></div>
+      <div><b>Lớp</b><span><?=h($childProfile['class_name'] ?? 'Chưa nhập')?></span></div>
+      <div><b>Môn thích</b><span><?=h($childProfile['favorite_subject'] ?? 'Chưa nhập')?></span></div>
+      <div><b>Sở thích</b><span><?=h($childProfile['hobby'] ?? 'Chưa nhập')?></span></div>
+    </div>
+    <?php if (!empty($childProfile['profile_note'])): ?>
+      <div class="profile-note"><?=h($childProfile['profile_note'])?></div>
+    <?php endif; ?>
+    <details class="profile-edit no-print">
+      <summary>Cập nhật profile</summary>
+      <form method="post" class="profile-form">
+        <input type="hidden" name="action" value="update_child_profile">
+        <p><b>Nickname</b><input name="profile_nickname" value="<?=h($childProfile['nickname'] ?? '')?>" placeholder="Ví dụ: Bống" required></p>
+        <p><b>Họ tên</b><input name="profile_full_name" value="<?=h($childProfile['full_name'] ?? '')?>" placeholder="Họ tên đầy đủ"></p>
+        <p><b>Ngày sinh</b><input type="date" name="profile_birthday" value="<?=h($childProfile['birthday'] ?? '')?>"></p>
+        <p><b>Lớp</b><input name="profile_class_name" value="<?=h($childProfile['class_name'] ?? '')?>" placeholder="Ví dụ: 3A"></p>
+        <p><b>Môn thích</b><input name="profile_favorite_subject" value="<?=h($childProfile['favorite_subject'] ?? '')?>" placeholder="Ví dụ: Toán, Mỹ thuật"></p>
+        <p><b>Sở thích</b><input name="profile_hobby" value="<?=h($childProfile['hobby'] ?? '')?>" placeholder="Ví dụ: đọc truyện, vẽ tranh"></p>
+        <p class="wide"><b>Thông tin khác</b><textarea name="profile_note" placeholder="Con muốn ghi thêm gì về bản thân..."><?=h($childProfile['profile_note'] ?? '')?></textarea></p>
+        <button class="btn blue">Lưu profile</button>
+      </form>
+    </details>
   </div>
   <div class="card weekly-goal-card" style="margin-top:18px">
     <div class="section-head">

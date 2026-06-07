@@ -196,6 +196,21 @@ function build_weekly_goal_view(array $goal): array
     ];
 }
 
+function get_child_display_name(array $profile): string
+{
+    $nickname = trim((string) ($profile['nickname'] ?? ''));
+    if ($nickname !== '') {
+        return $nickname;
+    }
+
+    $fullName = trim((string) ($profile['full_name'] ?? ''));
+    if ($fullName !== '') {
+        return $fullName;
+    }
+
+    return 'Con';
+}
+
 function require_today_date(?string $date, string $fieldLabel = 'ngày chọn'): string
 {
     $date = trim((string) $date);

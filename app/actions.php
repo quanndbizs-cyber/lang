@@ -40,6 +40,10 @@ function handle_request(PDO $db, array $config): void
         require_child_or_parent_login();
         handle_update_child_activity($db);
     }
+    if ($action === 'update_child_profile') {
+        require_child_or_parent_login();
+        handle_update_child_profile($db);
+    }
     if ($action === 'add_weekly_goal') {
         require_child_or_parent_login();
         handle_add_weekly_goal($db);
@@ -315,6 +319,36 @@ function handle_update_child_activity(PDO $db): void
     update_child_activity_content($db, $id, $title, $note);
     insert_audit_log($db, 'Con', 'updated', 'activity', $id, "Sửa nội dung task {$title} ngày {$activity['activity_date']}.");
     $_SESSION['msg'] = 'Đã cập nhật nội dung task.';
+
+    redirect_home();
+}
+
+function handle_update_child_profile(PDO $db): void
+{
+    $nickname = trim((string) ($_POST['profile_nickname'] ?? ''));
+    $fullName = trim((string) ($_POST['profile_full_name'] ?? ''));
+    $birthday = trim((string) ($_POST['profile_birthday'] ?? ''));
+    $className = trim((string) ($_POST['profile_class_name'] ?? ''));
+    $favoriteSubject = trim((string) ($_POST['profile_favorite_subject'] ?? ''));
+    $hobby = trim((string) ($_POST['profile_hobby'] ?? ''));
+    $profileNote = trim((string) ($_POST['profile_note'] ?? ''));
+
+    if ($birthday !== '') {
+        $parsed = DateTimeImmutable::createFromFormat('!Y-m-d', $birthday);
+        if (!$parsed || $parsed->format('Y-m-d') !== $birthday) {
+            $_SESSION['msg'] = 'Vui lòng nhập ngày sinh hợp lệ.';
+            redirect_home();
+        }
+    }
+
+    if ($nickname === '' && $fullName === '') {
+        $_SESSION['msg'] = 'Vui lòng nhập nickname hoặc họ tên.';
+        redirect_home();
+    }
+
+    upsert_child_profile($db, $nickname, $fullName, $birthday, $className, $favoriteSubject, $hobby, $profileNote);
+    insert_audit_log($db, is_child_logged_in() ? 'Con' : 'Bố mẹ', 'updated', 'child_profile', 1, 'Cập nhật profile cá nhân của con.');
+    $_SESSION['msg'] = 'Đã cập nhật profile cá nhân.';
 
     redirect_home();
 }
