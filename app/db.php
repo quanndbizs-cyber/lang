@@ -92,6 +92,21 @@ function initialize_database(PDO $db): void
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )"
     );
+
+    $db->exec(
+        "CREATE TABLE IF NOT EXISTS weekly_goals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            week_start TEXT NOT NULL,
+            title TEXT NOT NULL,
+            daily_target INTEGER NOT NULL DEFAULT 0,
+            target_amount INTEGER NOT NULL,
+            unit_label TEXT NOT NULL,
+            progress_amount INTEGER NOT NULL DEFAULT 0,
+            note TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )"
+    );
 }
 
 function insert_activity(
@@ -300,6 +315,53 @@ function fetch_holidays_between(PDO $db, string $startDate, string $endDate): ar
 {
     $stmt = $db->prepare('SELECT * FROM holidays WHERE holiday_date BETWEEN ? AND ? ORDER BY holiday_date DESC');
     $stmt->execute([$startDate, $endDate]);
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function insert_weekly_goal(
+    PDO $db,
+    string $weekStart,
+    string $title,
+    int $dailyTarget,
+    int $targetAmount,
+    string $unitLabel,
+    string $note
+): int {
+    $stmt = $db->prepare(
+        'INSERT INTO weekly_goals(week_start, title, daily_target, target_amount, unit_label, note) VALUES(?, ?, ?, ?, ?, ?)'
+    );
+    $stmt->execute([$weekStart, $title, $dailyTarget, $targetAmount, $unitLabel, $note]);
+
+    return (int) $db->lastInsertId();
+}
+
+function find_weekly_goal(PDO $db, int $id): ?array
+{
+    $stmt = $db->prepare('SELECT * FROM weekly_goals WHERE id = ?');
+    $stmt->execute([$id]);
+
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    return $row ?: null;
+}
+
+function update_weekly_goal_progress(PDO $db, int $id, int $progressAmount): void
+{
+    $stmt = $db->prepare('UPDATE weekly_goals SET progress_amount = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
+    $stmt->execute([$progressAmount, $id]);
+}
+
+function delete_weekly_goal(PDO $db, int $id): void
+{
+    $stmt = $db->prepare('DELETE FROM weekly_goals WHERE id = ?');
+    $stmt->execute([$id]);
+}
+
+function fetch_weekly_goals(PDO $db, string $weekStart): array
+{
+    $stmt = $db->prepare('SELECT * FROM weekly_goals WHERE week_start = ? ORDER BY id DESC');
+    $stmt->execute([$weekStart]);
 
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }

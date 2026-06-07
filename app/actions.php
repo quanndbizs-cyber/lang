@@ -40,6 +40,18 @@ function handle_request(PDO $db, array $config): void
         require_child_or_parent_login();
         handle_update_child_activity($db);
     }
+    if ($action === 'add_weekly_goal') {
+        require_child_or_parent_login();
+        handle_add_weekly_goal($db);
+    }
+    if ($action === 'update_weekly_goal_progress') {
+        require_child_or_parent_login();
+        handle_update_weekly_goal_progress($db);
+    }
+    if ($action === 'delete_weekly_goal') {
+        require_parent_login();
+        handle_delete_weekly_goal($db);
+    }
     if ($action === 'delete_activity') {
         require_parent_login();
         handle_delete_activity($db);
@@ -303,6 +315,72 @@ function handle_update_child_activity(PDO $db): void
     update_child_activity_content($db, $id, $title, $note);
     insert_audit_log($db, 'Con', 'updated', 'activity', $id, "Sửa nội dung task {$title} ngày {$activity['activity_date']}.");
     $_SESSION['msg'] = 'Đã cập nhật nội dung task.';
+
+    redirect_home();
+}
+
+function handle_add_weekly_goal(PDO $db): void
+{
+    $title = trim((string) ($_POST['goal_title'] ?? ''));
+    $dailyTarget = max(0, (int) ($_POST['goal_daily_target'] ?? 0));
+    $targetAmount = max(0, (int) ($_POST['goal_target_amount'] ?? 0));
+    $unitLabel = trim((string) ($_POST['goal_unit_label'] ?? ''));
+    $note = trim((string) ($_POST['goal_note'] ?? ''));
+    $weekStart = get_week_start();
+
+    if ($title === '') {
+        $_SESSION['msg'] = 'Vui lòng nhập tên mục tiêu tuần.';
+        redirect_home();
+    }
+
+    if ($targetAmount <= 0) {
+        $_SESSION['msg'] = 'Mục tiêu tuần cần lớn hơn 0.';
+        redirect_home();
+    }
+
+    if ($unitLabel === '') {
+        $_SESSION['msg'] = 'Vui lòng nhập đơn vị đo mục tiêu.';
+        redirect_home();
+    }
+
+    $goalId = insert_weekly_goal($db, $weekStart, $title, $dailyTarget, $targetAmount, $unitLabel, $note);
+    insert_audit_log($db, is_child_logged_in() ? 'Con' : 'Bố mẹ', 'created', 'weekly_goal', $goalId, "Tạo mục tiêu tuần {$title}: {$targetAmount} {$unitLabel}.");
+    $_SESSION['msg'] = 'Đã thêm mục tiêu tuần.';
+
+    redirect_home();
+}
+
+function handle_update_weekly_goal_progress(PDO $db): void
+{
+    $id = (int) ($_POST['goal_id'] ?? 0);
+    $progressAmount = max(0, (int) ($_POST['goal_progress_amount'] ?? 0));
+    $goal = find_weekly_goal($db, $id);
+
+    if (!$goal) {
+        $_SESSION['msg'] = 'Không tìm thấy mục tiêu tuần.';
+        redirect_home();
+    }
+
+    update_weekly_goal_progress($db, $id, $progressAmount);
+    insert_audit_log($db, is_child_logged_in() ? 'Con' : 'Bố mẹ', 'updated', 'weekly_goal', $id, "Cập nhật mục tiêu {$goal['title']}: đã làm {$progressAmount} {$goal['unit_label']}.");
+    $_SESSION['msg'] = 'Đã cập nhật tiến độ mục tiêu tuần.';
+
+    redirect_home();
+}
+
+function handle_delete_weekly_goal(PDO $db): void
+{
+    $id = (int) ($_POST['goal_id'] ?? 0);
+    $goal = find_weekly_goal($db, $id);
+
+    if (!$goal) {
+        $_SESSION['msg'] = 'Không tìm thấy mục tiêu tuần để xóa.';
+        redirect_home();
+    }
+
+    delete_weekly_goal($db, $id);
+    insert_audit_log($db, 'Bố mẹ', 'deleted', 'weekly_goal', $id, "Xóa mục tiêu tuần {$goal['title']}.");
+    $_SESSION['msg'] = 'Đã xóa mục tiêu tuần.';
 
     redirect_home();
 }

@@ -69,6 +69,9 @@ $dashboard = build_dashboard_stats(
 $activities = fetch_activities($db);
 $todayActivities = fetch_today_activities($db);
 $recentActivities = fetch_activities_between($db, date('Y-m-d', strtotime('-30 days')), date('Y-m-d'));
+$currentWeekStart = get_week_start();
+$currentWeekEnd = get_week_end($currentWeekStart);
+$weeklyGoals = fetch_weekly_goals($db, $currentWeekStart);
 $todayHoliday = find_holiday_by_date($db, date('Y-m-d'));
 $recentHolidays = fetch_holidays_between($db, date('Y-m-d', strtotime('-30 days')), date('Y-m-d'));
 $holidaysByDate = group_holidays_by_date(fetch_holidays_between($db, date('Y-m-d', strtotime('-90 days')), date('Y-m-d', strtotime('+90 days'))));
@@ -160,6 +163,66 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
       </form>
     <?php else: ?>
       <div class="muted">Con chưa đăng nhập. Bố mẹ đang xem bằng quyền bố mẹ.</div>
+    <?php endif; ?>
+  </div>
+  <div class="card weekly-goal-card" style="margin-top:18px">
+    <div class="section-head">
+      <div>
+        <h2>🎯 Mục tiêu tuần</h2>
+        <div class="muted">Tuần <?=h(date('d/m', strtotime($currentWeekStart)))?> - <?=h(date('d/m/Y', strtotime($currentWeekEnd)))?></div>
+      </div>
+    </div>
+    <form class="weekly-goal-form no-print" method="post">
+      <input type="hidden" name="action" value="add_weekly_goal">
+      <p><b>Mục tiêu</b><input name="goal_title" placeholder="Ví dụ: Đọc sách mỗi ngày" required></p>
+      <p><b>Mỗi ngày</b><input type="number" name="goal_daily_target" value="10" min="0"></p>
+      <p><b>Cả tuần</b><input type="number" name="goal_target_amount" value="70" min="1" required></p>
+      <p><b>Đơn vị</b><input name="goal_unit_label" value="trang sách" required></p>
+      <p class="wide"><b>Ghi chú</b><input name="goal_note" placeholder="Ví dụ: đọc trước giờ đi ngủ"></p>
+      <button class="btn green">Thêm mục tiêu</button>
+    </form>
+    <?php if ($weeklyGoals): ?>
+      <div class="weekly-goal-list">
+        <?php foreach ($weeklyGoals as $goal): ?>
+          <?php $goalView = build_weekly_goal_view($goal); ?>
+          <div class="weekly-goal-item">
+            <div>
+              <b><?=h($goal['title'])?></b>
+              <div class="muted">
+                Mục tiêu tuần: <?=h($goal['target_amount'])?> <?=h($goal['unit_label'])?>
+                <?php if ((int) ($goal['daily_target'] ?? 0) > 0): ?>
+                  · mỗi ngày <?=h($goal['daily_target'])?> <?=h($goal['unit_label'])?>
+                <?php endif; ?>
+              </div>
+              <?php if (!empty($goal['note'])): ?><div class="today-note"><?=h($goal['note'])?></div><?php endif; ?>
+              <div class="progress mini-progress"><div class="progress-inner" style="width: <?=$goalView['progress_percent']?>%"></div></div>
+              <div class="muted">
+                Đã làm <?=h($goal['progress_amount'])?>/<?=h($goal['target_amount'])?> <?=h($goal['unit_label'])?>
+                <?php if ($goalView['is_complete']): ?>
+                  · hoàn thành
+                <?php else: ?>
+                  · còn <?=h($goalView['remaining_amount'])?> <?=h($goal['unit_label'])?>
+                <?php endif; ?>
+              </div>
+            </div>
+            <form method="post" class="weekly-goal-progress no-print">
+              <input type="hidden" name="action" value="update_weekly_goal_progress">
+              <input type="hidden" name="goal_id" value="<?=h($goal['id'])?>">
+              <label><b>Đã làm</b><input type="number" name="goal_progress_amount" value="<?=h($goal['progress_amount'])?>" min="0"></label>
+              <button class="btn small blue">Cập nhật</button>
+            </form>
+            <?php if ($parentLoggedIn): ?>
+              <form method="post" class="no-print" onsubmit="return confirm('Xóa mục tiêu tuần này?')">
+                <input type="hidden" name="action" value="delete_weekly_goal">
+                <input type="hidden" name="goal_id" value="<?=h($goal['id'])?>">
+                <button class="btn small red">Xóa</button>
+              </form>
+            <?php endif; ?>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    <?php else: ?>
+      <div class="empty-state">Tuần này chưa có mục tiêu nào. Con có thể đặt mục tiêu như đọc 10 trang sách mỗi ngày.</div>
     <?php endif; ?>
   </div>
   <?php if ($parentLoggedIn): ?>

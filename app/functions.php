@@ -167,6 +167,35 @@ function format_activity_datetime(?string $datetime): string
     return date('d/m/Y H:i', $timestamp);
 }
 
+function get_week_start(?string $date = null): string
+{
+    $date = $date ?: date('Y-m-d');
+    $timestamp = strtotime($date);
+    if ($timestamp === false) {
+        $timestamp = time();
+    }
+
+    return date('Y-m-d', strtotime('monday this week', $timestamp));
+}
+
+function get_week_end(string $weekStart): string
+{
+    return date('Y-m-d', strtotime($weekStart . ' +6 days'));
+}
+
+function build_weekly_goal_view(array $goal): array
+{
+    $targetAmount = max(1, (int) ($goal['target_amount'] ?? 0));
+    $progressAmount = max(0, (int) ($goal['progress_amount'] ?? 0));
+    $remainingAmount = max(0, $targetAmount - $progressAmount);
+
+    return [
+        'progress_percent' => min(100, max(0, ($progressAmount / $targetAmount) * 100)),
+        'remaining_amount' => $remainingAmount,
+        'is_complete' => $progressAmount >= $targetAmount,
+    ];
+}
+
 function require_today_date(?string $date, string $fieldLabel = 'ngày chọn'): string
 {
     $date = trim((string) $date);
