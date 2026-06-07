@@ -320,3 +320,171 @@ function build_dashboard_stats(array $activityTotals, int $totalSpent, array $re
         'progress_percent' => min(100, max(0, ($currentStars / $progressBase) * 100)),
     ];
 }
+
+function get_day_part_greeting(?int $hour = null): string
+{
+    $hour = $hour ?? (int) date('G');
+
+    if ($hour < 11) {
+        return 'Chào buổi sáng! Hôm nay mình bắt đầu nhẹ nhàng nhé.';
+    }
+    if ($hour < 18) {
+        return 'Chào buổi chiều! Mình xem còn việc nào cần hoàn thành nha.';
+    }
+
+    return 'Chào buổi tối! Mình cùng tổng kết ngày hôm nay nhé.';
+}
+
+function get_required_activity_keys_for_date(array $config, string $date): array
+{
+    $required = $config['daily_required_activity_keys'] ?? [];
+    $dayType = ((int) date('N', strtotime($date)) >= 6) ? 'weekend' : 'weekday';
+
+    return array_values(array_filter($required[$dayType] ?? []));
+}
+
+function get_activity_option_label(array $config, string $key): string
+{
+    return (string) (($config['activity_options'][$key][0] ?? '') ?: $key);
+}
+
+function activity_matches_option(array $activity, array $option): bool
+{
+    [$title, , $category] = $option + ['', 0, 'other'];
+
+    return trim((string) ($activity['title'] ?? '')) === (string) $title
+        && (string) ($activity['category'] ?? 'other') === (string) $category;
+}
+
+function analyze_daily_progress(array $activities, array $config, string $date): array
+{
+    $requiredKeys = get_required_activity_keys_for_date($config, $date);
+    $completedKeys = [];
+    $screenPenaltyCount = 0;
+    $completedActivityCount = 0;
+    $unfinishedActivityCount = 0;
+
+    foreach ($activities as $activity) {
+        $status = sanitize_parent_review_status($activity['status'] ?? 'pending');
+        $stars = get_counted_activity_stars($activity);
+
+        if ($status === 'ng') {
+            continue;
+        }
+
+        if (($activity['category'] ?? '') === 'screen_penalty' || (int) ($activity['stars'] ?? 0) < 0) {
+            $screenPenaltyCount++;
+            continue;
+        }
+
+        if ($stars > 0) {
+            $completedActivityCount++;
+        } else {
+            $unfinishedActivityCount++;
+        }
+
+        foreach ($requiredKeys as $key) {
+            if (isset($completedKeys[$key]) || !isset($config['activity_options'][$key])) {
+                continue;
+            }
+            if (activity_matches_option($activity, $config['activity_options'][$key])) {
+                $completedKeys[$key] = true;
+            }
+        }
+    }
+
+    $missingKeys = array_values(array_filter($requiredKeys, fn($key) => empty($completedKeys[$key])));
+    $missingLabels = array_map(fn($key) => get_activity_option_label($config, $key), $missingKeys);
+    $completedRequiredCount = count($requiredKeys) - count($missingKeys);
+
+    return [
+        'date' => $date,
+        'required_keys' => $requiredKeys,
+        'missing_keys' => $missingKeys,
+        'missing_labels' => $missingLabels,
+        'completed_required_count' => $completedRequiredCount,
+        'required_count' => count($requiredKeys),
+        'completed_activity_count' => $completedActivityCount,
+        'unfinished_activity_count' => $unfinishedActivityCount + count($missingKeys),
+        'screen_penalty_count' => $screenPenaltyCount,
+        'is_complete' => count($requiredKeys) > 0 && count($missingKeys) === 0,
+    ];
+}
+
+function count_completion_streak(array $activitiesByDate, array $config, string $endDate): int
+{
+    $streak = 0;
+    $cursor = new DateTimeImmutable($endDate);
+
+    for ($i = 0; $i < 30; $i++) {
+        $date = $cursor->format('Y-m-d');
+        $progress = analyze_daily_progress($activitiesByDate[$date] ?? [], $config, $date);
+        if (!$progress['is_complete']) {
+            break;
+        }
+
+        $streak++;
+        $cursor = $cursor->modify('-1 day');
+    }
+
+    return $streak;
+}
+
+function group_activities_by_date(array $activities): array
+{
+    $grouped = [];
+
+    foreach ($activities as $activity) {
+        $date = (string) ($activity['activity_date'] ?? '');
+        if ($date === '') {
+            continue;
+        }
+        $grouped[$date][] = $activity;
+    }
+
+    return $grouped;
+}
+
+function build_dashboard_coach(array $todayActivities, array $recentActivities, array $config): array
+{
+    $today = date('Y-m-d');
+    $progress = analyze_daily_progress($todayActivities, $config, $today);
+    $activitiesByDate = group_activities_by_date($recentActivities);
+    $activitiesByDate[$today] = $todayActivities;
+    $streak = count_completion_streak($activitiesByDate, $config, $today);
+    $hour = (int) date('G');
+    $restAfterHour = (int) ($config['screen_time']['rest_after_hour'] ?? 21);
+    $screenLimit = (int) ($config['screen_time']['daily_limit_minutes'] ?? 60);
+    $screenNeedsRest = $progress['screen_penalty_count'] > 0 || $hour >= $restAfterHour;
+    $screenTitle = 'Chưa nên chơi màn hình';
+    $screenMessage = 'Mình làm xong các việc chính trước rồi hãy giải trí nhé.';
+
+    if ($screenNeedsRest) {
+        $screenTitle = 'Nghỉ màn hình thôi';
+        $screenMessage = $progress['screen_penalty_count'] > 0
+            ? 'Hôm nay màn hình đã quá giờ. Mắt và đầu cần nghỉ một chút nhé.'
+            : 'Đã đến giờ nghỉ màn hình. Mình chuẩn bị ngủ ngon để mai có sức.';
+    } elseif ($progress['is_complete']) {
+        $screenTitle = 'Có thể giải trí có chừng mực';
+        $screenMessage = "Con đã xong việc chính. Nếu bố mẹ đồng ý, mình chơi tối đa {$screenLimit} phút nhé.";
+    }
+
+    $primaryMessage = $progress['is_complete']
+        ? 'Tuyệt lắm, hôm nay con đã hoàn thành đủ việc cần làm.'
+        : 'Mình còn vài việc nhỏ. Làm từng việc một là sẽ xong thôi.';
+
+    if ($streak >= 3) {
+        $primaryMessage = "Quá tốt! Con đã giữ chuỗi {$streak} ngày hoàn thành đủ việc.";
+    }
+
+    return [
+        'greeting' => get_day_part_greeting($hour),
+        'primary_message' => $primaryMessage,
+        'progress' => $progress,
+        'streak' => $streak,
+        'screen_title' => $screenTitle,
+        'screen_message' => $screenMessage,
+        'screen_needs_rest' => $screenNeedsRest,
+        'daily_summary' => "Hôm nay đã xong {$progress['completed_activity_count']} activity, còn {$progress['unfinished_activity_count']} mục cần chú ý.",
+    ];
+}

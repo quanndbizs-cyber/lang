@@ -39,6 +39,14 @@ return [
         'clean_room' => ['Dọn bàn học, phòng ngủ', 1, 'housework'],
         'screen_ok' => ['Không vượt thời gian màn hình', 1, 'bonus'],
     ],
+    'daily_required_activity_keys' => [
+        'weekday' => ['study_2h', 'read_book', 'exercise', 'housework', 'clean_room', 'screen_ok'],
+        'weekend' => ['read_book', 'exercise', 'housework', 'clean_room', 'screen_ok'],
+    ],
+    'screen_time' => [
+        'daily_limit_minutes' => 60,
+        'rest_after_hour' => 21,
+    ],
     'penalty_options' => [
         0 => ['Không vượt giờ / không chơi quá quy định', 0],
         60 => ['Chơi 1 giờ YouTube/TV/Game', -3, 'screen_penalty'],

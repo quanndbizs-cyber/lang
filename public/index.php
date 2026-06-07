@@ -67,6 +67,8 @@ $dashboard = build_dashboard_stats(
 );
 $activities = fetch_activities($db);
 $todayActivities = fetch_today_activities($db);
+$recentActivities = fetch_activities_between($db, date('Y-m-d', strtotime('-30 days')), date('Y-m-d'));
+$dashboardCoach = build_dashboard_coach($todayActivities, $recentActivities, $config);
 $rewards = fetch_rewards($db);
 $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
 ?>
@@ -94,6 +96,30 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
     </div>
   </div>
   <?php if (!empty($_SESSION['msg'])): ?><div class="notice"><?=h($_SESSION['msg']); unset($_SESSION['msg']);?></div><?php endif; ?>
+  <div class="coach-card" style="margin-top:18px">
+    <div class="coach-main">
+      <div class="coach-greeting"><?=h($dashboardCoach['greeting'])?></div>
+      <h2><?=h($dashboardCoach['primary_message'])?></h2>
+      <div class="coach-summary"><?=h($dashboardCoach['daily_summary'])?></div>
+      <?php if ($dashboardCoach['progress']['is_complete']): ?>
+        <div class="coach-praise">Lời khen hôm nay: con rất tự giác và biết giữ lời hứa với chính mình.</div>
+      <?php else: ?>
+        <div class="coach-reminder">Nhắc nhẹ: mình còn thiếu các việc này.</div>
+        <ul class="missing-list">
+          <?php foreach ($dashboardCoach['progress']['missing_labels'] as $missingLabel): ?>
+            <li><?=h($missingLabel)?></li>
+          <?php endforeach; ?>
+        </ul>
+      <?php endif; ?>
+      <?php if ($dashboardCoach['streak'] >= 3): ?>
+        <div class="streak-badge">Chuỗi hoàn thành: <?=h($dashboardCoach['streak'])?> ngày liên tiếp</div>
+      <?php endif; ?>
+    </div>
+    <div class="screen-status <?= $dashboardCoach['screen_needs_rest'] ? 'screen-rest' : '' ?>">
+      <b><?=h($dashboardCoach['screen_title'])?></b>
+      <span><?=h($dashboardCoach['screen_message'])?></span>
+    </div>
+  </div>
   <div class="card no-print parent-login-card" style="margin-top:18px">
     <h2>🔐 Khu vực bố mẹ</h2>
     <?php if ($parentLoggedIn): ?>

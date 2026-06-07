@@ -216,6 +216,16 @@ function fetch_today_activities(PDO $db): array
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+function fetch_activities_between(PDO $db, string $startDate, string $endDate): array
+{
+    $stmt = $db->prepare(
+        'SELECT * FROM activities WHERE activity_date BETWEEN ? AND ? ORDER BY activity_date DESC, created_at DESC, id DESC'
+    );
+    $stmt->execute([$startDate, $endDate]);
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 function fetch_rewards(PDO $db, int $limit = 30): array
 {
     $stmt = $db->prepare('SELECT * FROM rewards ORDER BY reward_date DESC, id DESC LIMIT ?');
