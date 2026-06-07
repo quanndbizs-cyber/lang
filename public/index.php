@@ -28,6 +28,7 @@ if (!is_app_logged_in()): ?>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Đăng nhập - Bảng sao mùa hè</title>
 <link rel="stylesheet" href="<?=h(public_url('assets/style.css', $publicBasePath))?>">
+<link rel="icon" type="image/png" href="<?=h(public_url('favicon.ico', $publicBasePath))?>">
 </head>
 <body>
 <div class="wrap auth-wrap">
@@ -75,6 +76,7 @@ $auditLogs = $parentLoggedIn ? fetch_audit_logs($db) : [];
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>⭐ Bảng sao mùa hè</title>
 <link rel="stylesheet" href="<?=h(public_url('assets/style.css', $publicBasePath))?>">
+<link rel="icon" type="image/png" href="<?=h(public_url('favicon.ico', $publicBasePath))?>">
 </head>
 <body>
 <div class="wrap">
