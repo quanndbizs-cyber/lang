@@ -113,6 +113,67 @@ return [
             '
         ]
     ]
+],
+3 => [
+    'title' => 'Bài 3: Môn học yêu thích (Favorite School Subjects)',
+    'desc' => 'Khám phá từ vựng môn học, luyện đọc hội thoại thời khóa biểu, dùng trạng từ chỉ tần suất và làm bài đọc KET Part 4.',
+    'stages' => [
+        // CHẶNG 1: TỪ VỰNG & MẪU CÂU 🔤
+        1 => [
+            'vocab' => [
+                ['word' => 'Mathematics (Math)', 'type' => 'n', 'ipa' => '/ˌmæθ.ˈmæt.ɪks/', 'meaning' => 'Môn Toán 📐', 'ex' => 'Math is interesting but a bit difficult.'],
+                ['word' => 'Science', 'type' => 'n', 'ipa' => '/ˈsaɪ.əns/', 'meaning' => 'Khoa học 🔬', 'ex' => 'We do experiments in Science class.'],
+                ['word' => 'History', 'type' => 'n', 'ipa' => '/ˈhɪs.tər.i/', 'meaning' => 'Lịch sử 📜', 'ex' => 'I learn about the past in History.'],
+                ['word' => 'Geography', 'type' => 'n', 'ipa' => '/dʒiˈɒɡ.rə.fi/', 'meaning' => 'Địa lý 🌍', 'ex' => 'Geography helps us learn about countries.'],
+                ['word' => 'English', 'type' => 'n', 'ipa' => '/ˈɪŋ.ɡlɪʃ/', 'meaning' => 'Tiếng Anh 🔤', 'ex' => 'English is useful for global communication.'],
+                ['word' => 'Art', 'type' => 'n', 'ipa' => '/ɑːt/', 'meaning' => 'Mỹ thuật 🎨', 'ex' => 'She draws beautiful pictures in Art.'],
+                ['word' => 'Music', 'type' => 'n', 'ipa' => '/ˈmjuː.zɪk/', 'meaning' => 'Âm nhạc 🎵', 'ex' => 'We sing songs in Music class.'],
+                ['word' => 'Physical Education (PE)', 'type' => 'n', 'ipa' => '/ˌfɪz.ɪ.kəl ed.jʊˈkeɪ.ʃən/', 'meaning' => 'Thể dục ⚽', 'ex' => 'We play sports during PE.'],
+                ['word' => 'Timetable', 'type' => 'n', 'ipa' => '/ˈtaɪmˌteɪ.bəl/', 'meaning' => 'Thời khóa biểu 📅', 'ex' => 'Check your timetable for tomorrow.'],
+                ['word' => 'Favorite', 'type' => 'adj', 'ipa' => '/ˈfeɪ.vər.ɪt/', 'meaning' => 'Yêu thích ⭐', 'ex' => 'PE is my favorite subject.']
+            ]
+        ],
+        // CHẶNG 2: HỘI THOẠI & PHÁT ÂM 🎧
+        2 => [
+            'dialogue_title' => '🗣️ Conversation: School Timetable',
+            'dialogue_content' => '
+                <p><strong>Ben:</strong> Hi Anna! What subjects do you have on Monday?</p>
+                <p><strong>Anna:</strong> I have Math, Science, and English. How about you?</p>
+                <p><strong>Ben:</strong> I have History and PE. PE is my favorite subject because I love playing basketball!</p>
+                <p><strong>Anna:</strong> I prefer Science. We usually do fun experiments in the lab.</p>
+            ',
+            'embed_video' => 'https://www.youtube-nocookie.com/embed/g2bHDo7YR30',
+            'embed_audio' => 'https://www.w3schools.com/html/horse.mp3'
+        ],
+        // CHẶNG 3: NGỮ PHÁP & ĐỌC HIỂU KET PART 4 📖
+        3 => [
+            'content' => '
+                <h4>1. Ngữ pháp: Trạng từ chỉ tần suất & Hỏi lý do (Why / Because)</h4>
+                <ul>
+                    <li><strong>Trạng từ chỉ tần suất:</strong> <em>Always</em> (100%), <em>Usually</em> (80%), <em>Sometimes</em> (50%), <em>Never</em> (0%).
+                        <br><code>Example: I usually have English on Mondays.</code>
+                    </li>
+                    <li><strong>Hỏi & Trả lời lý do:</strong>
+                        <br><code>Question: Why do you like Science?</code>
+                        <br><code>Answer: Because it is very interesting!</code>
+                    </li>
+                </ul>
+                <br>
+                <h4>2. Luyện đọc KET Part 4 (Bài đọc hoàn chỉnh):</h4>
+                <blockquote style="background: #f1f5f9; padding: 15px; border-left: 4px solid #0284c7; margin: 10px 0;">
+                    "My name is Sarah and I am a student at Greenhill School. Every day, I check my school (1) ___ to see my classes. 
+                    I like many subjects, but my (2) ___ subject is Art because I love drawing. 
+                    We (3) ___ have Art classes on Friday afternoon, so Friday is my favorite day of the week!"
+                </blockquote>
+                <p><strong>Câu hỏi luyện tập:</strong></p>
+                <ol>
+                    <li>(1) Choose: <strong>A. timetable</strong> | <strong>B. library</strong> | <strong>C. classroom</strong></li>
+                    <li>(2) Choose: <strong>A. friendly</strong> | <strong>B. favorite</strong> | <strong>C. younger</strong></li>
+                    <li>(3) Choose: <strong>A. never</strong> | <strong>B. always</strong> | <strong>C. because</strong></li>
+                </ol>
+            '
+        ]
+    ]
 ]
             ]
         ],
