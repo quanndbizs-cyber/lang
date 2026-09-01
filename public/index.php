@@ -1385,6 +1385,7 @@ $basePath = $config['public_base_path'] ?? '';
             cleaned = cleaned.replace(/\(.*?\)/g, '').replace(/（.*?）/g, '');
             // 2. Loại bỏ toàn bộ nội dung trong ngoặc vuông [] hoặc 【】 nếu có
             cleaned = cleaned.replace(/\[.*?\]/g, '').replace(/【.*?】/g, '');
+            
             // 3. Nếu còn phần dịch phân tách bởi dấu gạch ngang " - " hoặc " : ", chỉ lấy vế tiếng Nhật phía trước
             if (cleaned.includes(' - ')) {
                 cleaned = cleaned.split(' - ')[0];

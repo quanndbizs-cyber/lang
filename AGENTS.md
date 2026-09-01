@@ -42,3 +42,4 @@
 - nếu một Issue buộc phải phụ thuộc Issue trước để chạy đúng, cần nêu rõ branch kế thừa nào đã được dùng làm base khi báo cáo kết quả
 - nếu chưa thể chạy đủ test, phải nói rõ đã chạy test nào, thiếu test nào, và lý do
 - khi làm nhiều Issue trong một chuỗi, sau mỗi Issue phải dừng ở trạng thái branch/commit của chính Issue đó để có thể review hoặc tách tiếp nhánh kế thừa cho Issue sau
+- có comment giải thích ngắn những đoạn code logic hoặc chỗ có thay đổi, sửa chữa.

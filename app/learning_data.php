@@ -1012,7 +1012,7 @@ function get_japanese_grammar_data(array $config = []): array
                     'pattern' => $pattern,
                     'meaning' => $meaning !== '' ? $meaning : 'Ngữ pháp JLPT N2 chuyên sâu',
                     'link' => get_japanese_grammar_reference_url($pattern),
-                    'example' => "Ví dụ minh họa mẫu câu: {$pattern}",
+                    'example' => "{$pattern}",
                     'note' => 'Mẫu câu ngữ pháp trung - cao cấp JLPT N2. Xem chi tiết cấu trúc kết hợp qua link hướng dẫn.'
                 ];
             }
