@@ -792,7 +792,7 @@ $basePath = $config['public_base_path'] ?? '';
                     <div class="flex items-center justify-between pt-3 border-t border-slate-800">
                         <a id="modalRefLink" href="#" target="_blank" rel="noopener noreferrer"
                            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition">
-                            <span>🔗 Xem bài viết chi tiết tại Minder JP</span>
+                            <span>🔗 Xem bài viết chi tiết tại Mazii JP</span>
                             <span>↗</span>
                         </a>
                         <button onclick="closeJaGrammarModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition">
@@ -1377,7 +1377,32 @@ $basePath = $config['public_base_path'] ?? '';
             }
         }
         function speakZhText(text) { speakText(text, 'zh-CN'); }
-        function speakJaText(text) { speakText(text, 'ja-JP'); }
+
+        function extractJapaneseTextOnly(text) {
+            if (!text) return '';
+            let cleaned = String(text);
+            // 1. Loại bỏ toàn bộ nội dung nằm trong ngoặc tròn () và ngoặc tiếng Nhật （）
+            cleaned = cleaned.replace(/\(.*?\)/g, '').replace(/（.*?）/g, '');
+            // 2. Loại bỏ toàn bộ nội dung trong ngoặc vuông [] hoặc 【】 nếu có
+            cleaned = cleaned.replace(/\[.*?\]/g, '').replace(/【.*?】/g, '');
+            // 3. Nếu còn phần dịch phân tách bởi dấu gạch ngang " - " hoặc " : ", chỉ lấy vế tiếng Nhật phía trước
+            if (cleaned.includes(' - ')) {
+                cleaned = cleaned.split(' - ')[0];
+            }
+            if (cleaned.includes(' : ')) {
+                cleaned = cleaned.split(' : ')[0];
+            }
+            // 4. Lược bỏ các ký tự đặc biệt ở đầu/cuối như dấu ngã ～, ~, ba chấm …, dấu chấm, dấu hai chấm
+            cleaned = cleaned.replace(/^[～~\s…・:：\.\,／\/]+|[～~\s…・:：\.\,／\/]+$/g, '');
+            return cleaned.trim();
+        }
+
+        function speakJaText(text) {
+            const jaText = extractJapaneseTextOnly(text);
+            if (!jaText) return;
+            speakText(jaText, 'ja-JP');
+        }
+
         function speakKoText(text) { speakText(text, 'ko-KR'); }
 
         // Subtabs for Zh, Ja, Ko

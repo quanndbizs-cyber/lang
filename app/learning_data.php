@@ -245,6 +245,16 @@ function get_language_vocab_packs(): array
     ];
 }
 
+function get_japanese_grammar_reference_url(string $pattern): string
+{
+    $clean = preg_replace('/\(.*?\)|（.*?）/u', '', $pattern);
+    $clean = trim(preg_replace('/^[～~\s…\.\,\/\:：・]+|[～~\s…\.\,\/\:：・]+$/u', '', $clean));
+    if ($clean === '') {
+        $clean = $pattern;
+    }
+    return 'https://mazii.net/vi-VN/search/grammar/ja-vi/' . rawurlencode($clean);
+}
+
 function get_japanese_grammar_data(array $config = []): array
 {
     $n5Items = [
@@ -253,7 +263,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => '～は～です (~ wa ~ desu)',
             'meaning' => 'N1 là N2 (Câu khẳng định danh từ)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-wa-desu/',
+            'link' => get_japanese_grammar_reference_url('～は～です'),
             'example' => 'わたしは学生です。(Watashi wa gakusei desu - Tôi là học sinh.)',
             'note' => 'Cấu trúc: [N1] は [N2] です. Trợ từ は đọc là "wa", dùng xác định chủ đề câu.'
         ],
@@ -262,7 +272,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => '～じゃありません / ではありません (~ ja arimasen / dewa arimasen)',
             'meaning' => 'N1 không phải là N2 (Câu phủ định danh từ)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-ja-arimasen/',
+            'link' => get_japanese_grammar_reference_url('～じゃありません'),
             'example' => '田中さんは先生じゃありません。(Tanaka-san wa sensei ja arimasen - Anh Tanaka không phải là giáo viên.)',
             'note' => 'Cấu trúc: [N1] は [N2] じゃありません. Văn nói dùng じゃありません, trang trọng/văn viết dùng ではありません.'
         ],
@@ -271,7 +281,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => '～ですか (~ desu ka)',
             'meaning' => 'Có phải là ... không? (Câu hỏi nghi vấn)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-desu-ka/',
+            'link' => get_japanese_grammar_reference_url('～ですか'),
             'example' => 'あの方はマイクさんですか。(Ano kata wa Maiku-san desu ka - Vị kia có phải là anh Mike không?)',
             'note' => 'Cấu trúc: [Mệnh đề] + か. Trợ từ か ở cuối câu tạo thành câu hỏi, không dùng dấu chấm hỏi (?) trong văn bản chuẩn.'
         ],
@@ -280,7 +290,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => '～も (~ mo)',
             'meaning' => '... cũng là ... (Trợ từ "cũng")',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-mo/',
+            'link' => get_japanese_grammar_reference_url('～も'),
             'example' => 'ミラーさんはアメリカ人です。スミスさんもアメリカ人です。(Miraa-san wa amerikajin desu. Sumisu-san mo amerikajin desu - Anh Miller là người Mỹ. Anh Smith cũng là người Mỹ.)',
             'note' => 'Cấu trúc: [N] も. Dùng thay thế cho trợ từ は/が/を khi muốn biểu thị sự đồng nhất tính chất hoặc hành động.'
         ],
@@ -289,7 +299,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => '～の (~ no)',
             'meaning' => 'Của, thuộc về, về mặt (Trợ từ sở hữu & giải thích)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-no/',
+            'link' => get_japanese_grammar_reference_url('～の'),
             'example' => 'これは私の本です。(Kore wa watashi no hon desu - Đây là cuốn sách của tôi.)',
             'note' => 'Cấu trúc: [N1] の [N2]. N1 bổ nghĩa cho N2: sở hữu (của ai), chủng loại, xuất xứ.'
         ],
@@ -298,7 +308,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'これ / それ / あれ / どれ (kore / sore / are / dore)',
             'meaning' => 'Cái này / Cái đó / Cái kia / Cái nào (Đại từ chỉ vật)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-kore-sore-are/',
+            'link' => get_japanese_grammar_reference_url('これ / それ / あれ / どれ'),
             'example' => 'これは辞書です。あれは傘です。(Kore wa jisho desu. Are wa kasa desu - Đây là từ điển. Kia là cái ô.)',
             'note' => 'これ: gần người nói; それ: gần người nghe; あれ: xa cả hai; どれ: từ để hỏi (cái nào).'
         ],
@@ -307,7 +317,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'この / その / あの / どの + N (kono / sono / ano / dono + N)',
             'meaning' => '... này / ... đó / ... kia / ... nào (Chỉ định từ bổ nghĩa)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-kono-sono-ano/',
+            'link' => get_japanese_grammar_reference_url('この / その / あの / どの'),
             'example' => 'このカメラは高いです。(Kono kamera wa takai desu - Chiếc máy ảnh này đắt.)',
             'note' => 'Bắt buộc phải đi kèm với danh từ đứng ngay sau: [この/その/あの/どの] + N.'
         ],
@@ -316,7 +326,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'ここ / そこ / あそこ / どこ (koko / soko / asoko / doko)',
             'meaning' => 'Ở đây / Ở đó / Ở kia / Ở đâu (Đại từ chỉ nơi chốn)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-koko-soko-asoko/',
+            'link' => get_japanese_grammar_reference_url('ここ / そこ / あそこ / どこ'),
             'example' => '受付はどこですか。あそこです。(Uketsuke wa doko desu ka. Asoko desu - Quầy tiếp tân ở đâu ạ? Ở đằng kia ạ.)',
             'note' => 'Chỉ vị trí không gian. Dạng lịch sự tương ứng là: こちら / そちら / あちら / どちら.'
         ],
@@ -325,7 +335,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'N (Địa điểm) + へ + 行きます / 来ます / 帰ります (e ikimasu / kimasu / kaerimasu)',
             'meaning' => 'Đi đến / Đến / Trở về [Địa điểm]',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-e-ikimasu/',
+            'link' => get_japanese_grammar_reference_url('N (Địa điểm) + へ + 行きます / 来ます / 帰ります'),
             'example' => '明日東京へ行きます。(Ashita Toukyou e ikimasu - Ngày mai tôi đi Tokyo.) / 国へ帰ります。(Kuni e kaerimasu - Về nước.)',
             'note' => 'Cấu trúc: [N nơi chốn] + へ + [V di chuyển]. Trợ từ へ phát âm là "e", chỉ hướng di chuyển.'
         ],
@@ -334,7 +344,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'N (Phương tiện) + で + 行きます / 来ます (de ikimasu / kimasu)',
             'meaning' => 'Đi / Đến bằng phương tiện gì',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-de-ikimasu/',
+            'link' => get_japanese_grammar_reference_url('N (Phương tiện) + で + 行きます / 来ます'),
             'example' => '電車で会社へ行きます。(Densha de kaisha e ikimasu - Tôi đi đến công ty bằng tàu điện.)',
             'note' => 'Cấu trúc: [Phương tiện] + で + V. Nếu đi bộ: 歩いて行きます (aruite ikimasu, không dùng trợ từ で).'
         ],
@@ -343,7 +353,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'N (Người) + と + V (to V)',
             'meaning' => 'Làm việc gì cùng với ai (Trợ từ cùng nhau / với)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-to-v/',
+            'link' => get_japanese_grammar_reference_url('N (Người) + と + V'),
             'example' => '家族と日本へ来ました。(Kazoku to Nihon e kimashita - Tôi đã sang Nhật cùng với gia đình.)',
             'note' => 'Cấu trúc: [N người/động vật] + と + V. Nếu làm một mình: 一人で (hitori de).'
         ],
@@ -352,7 +362,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'N (Thời gian) + に + V (ni V)',
             'meaning' => 'Làm gì vào lúc [Thời gian cụ thể]',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-ni-v/',
+            'link' => get_japanese_grammar_reference_url('N (Thời gian) + に + V'),
             'example' => '毎朝6時半に起きます。(Maiasa roku-ji han ni okimasu - Mỗi sáng tôi thức dậy vào lúc 6 giờ rưỡi.)',
             'note' => 'Dùng に với mốc thời gian có số cụ thể (giờ, ngày, tháng, năm). Không dùng に với 今日, 明日, 毎日, 今.'
         ],
@@ -361,7 +371,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => '～から～まで (~ kara ~ made)',
             'meaning' => 'Từ ... đến ... (Thời gian / Không gian)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-kara-made/',
+            'link' => get_japanese_grammar_reference_url('～から～まで'),
             'example' => '9時から5時まで働きます。(Ku-ji kara go-ji made hatarakimasu - Tôi làm việc từ 9 giờ đến 5 giờ.)',
             'note' => 'Cấu trúc: [Mốc bắt đầu] + から + [Mốc kết thúc] + まで. Có thể dùng độc lập từng từ から hoặc まで.'
         ],
@@ -370,7 +380,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'N (Tân ngữ) + を + V (o V)',
             'meaning' => 'Làm hành động gì đối với N (Trợ từ tân ngữ trực tiếp)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-o-v/',
+            'link' => get_japanese_grammar_reference_url('N (Tân ngữ) + を + V'),
             'example' => '毎朝パンを食べます。(Maiasa pan o tabemasu - Mỗi sáng tôi ăn bánh mì.) / 水を飲みます。(Mizu o nomimasu - Uống nước.)',
             'note' => 'Trợ từ を phát âm là "o", đứng sau đối tượng chịu sự tác động trực tiếp của ngoại động từ.'
         ],
@@ -379,7 +389,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'N (Địa điểm) + で + V (de V)',
             'meaning' => 'Làm việc gì tại / ở địa điểm nào',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-de-v/',
+            'link' => get_japanese_grammar_reference_url('N (Địa điểm) + で + V'),
             'example' => '図書館で本を読みます。(Toshokan de hon o yomimasu - Đọc sách ở thư viện.)',
             'note' => 'Phân biệt: [Địa điểm] + で (nơi diễn ra hành động) vs [Địa điểm] + に (nơi tồn tại hoặc điểm đến).'
         ],
@@ -388,7 +398,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'V-ませんか (V-masen ka)',
             'meaning' => 'Bạn cùng làm ... với tôi nhé? (Lời mời mọc lịch sự)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-masen-ka/',
+            'link' => get_japanese_grammar_reference_url('V-ませんか'),
             'example' => 'いっしょにお茶を飲みませんか。(Isshoni ocha o nomimasen ka - Bạn cùng uống trà với tôi nhé?)',
             'note' => 'Cấu trúc: V-bỏ masu + ませんか. Thể hiện lời mời lịch sự, tôn trọng và thăm dò ý kiến của đối phương.'
         ],
@@ -397,7 +407,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'V-ましょう (V-mashou)',
             'meaning' => 'Cùng làm ... nhé! / Hãy cùng làm ... nào! (Đề nghị / Rủ rê)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-mashou/',
+            'link' => get_japanese_grammar_reference_url('V-ましょう'),
             'example' => 'ちょっと休みましょう。(Chotto yasumimashou - Chúng ta nghỉ giải lao một chút nào.)',
             'note' => 'Cấu trúc: V-bỏ masu + ましょう. Dùng khi chủ động đề nghị hoặc hưởng ứng lời mời của người khác.'
         ],
@@ -406,7 +416,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'N (Công cụ/Ngôn ngữ) + で + V (de V)',
             'meaning' => 'Làm gì bằng công cụ / phương tiện / ngôn ngữ gì',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-de-cong-cu/',
+            'link' => get_japanese_grammar_reference_url('N (Công cụ/Ngôn ngữ) + で + V'),
             'example' => '箸でご飯を食べます。(Hashi de gohan o tabemasu - Ăn cơm bằng đũa.) / 日本語でレポートを書きます。(Nihongo de repooto o kakimasu - Viết báo cáo bằng tiếng Nhật.)',
             'note' => 'Trợ từ で chỉ công cụ, dụng cụ hoặc phương thức được dùng để tiến hành hành động.'
         ],
@@ -415,7 +425,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'N (Người nhận) + に + N (Vật) + を + あげます (ni ... o agemasu)',
             'meaning' => 'Tặng / Đưa / Cho ai cái gì',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-agemasu/',
+            'link' => get_japanese_grammar_reference_url('N (Người nhận) + に + N (Vật) + を + あげます'),
             'example' => '私は母に花をあげました。(Watashi wa haha ni hana o agemashita - Tôi đã tặng hoa cho mẹ.)',
             'note' => 'Người nhận đi với trợ từ に. Tuyệt đối không dùng あげます khi người nhận là chính mình (người khác tặng mình dùng くれます).'
         ],
@@ -424,7 +434,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'N (Người cho) + に / から + N (Vật) + を + もらいます (ni/kara ... o moraimasu)',
             'meaning' => 'Nhận cái gì từ ai',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-moraimasu/',
+            'link' => get_japanese_grammar_reference_url('N (Người cho) + に / から + N (Vật) + を + もらいます'),
             'example' => '私は友達に誕生日プレゼントをもらいました。(Watashi wa tomodachi ni tanjoubi purezento o moraimashita - Tôi đã nhận quà sinh nhật từ bạn bè.)',
             'note' => 'Người cho đi với trợ từ に hoặc から. Nếu đối tượng cho là cơ quan/tổ chức thì bắt buộc dùng から.'
         ],
@@ -433,7 +443,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'もう + V-ました / まだ + V-ていません (mou ... mashita / mada ... te imasen)',
             'meaning' => 'Đã làm ... rồi / Vẫn chưa làm ...',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-mou-mada/',
+            'link' => get_japanese_grammar_reference_url('もう + V-ました / まだ + V-ていません'),
             'example' => 'もう宿題をしましたか。いいえ、まだです。(Mou shukudai o shimashita ka. Iie, mada desu - Bạn đã làm bài tập chưa? Chưa, tôi chưa làm.)',
             'note' => 'Trả lời phủ định cho câu hỏi "もう～ましたか" là "いいえ、まだです" hoặc "いいえ、まだ～ていません" (không dùng V-ませんでした).'
         ],
@@ -442,7 +452,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'Tính từ đuôi い: ～いです / ～くないです / ～かったです / ～くなかったです (Adj-i)',
             'meaning' => 'Tính từ đuôi -i ở các dạng Khẳng định, Phủ định, Quá khứ',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-tinh-tu-i/',
+            'link' => get_japanese_grammar_reference_url('Tính từ đuôi い'),
             'example' => '昨日はとても暑かったです。(Kinou wa totemo atsukatta desu - Hôm qua trời đã rất nóng.) / この本は高くないです。(Kono hon wa takakunai desu - Cuốn sách này không đắt.)',
             'note' => 'Khẳng định: [A-i] です; Phủ định: [A-bỏ i + くない] です; Quá khứ: [A-bỏ i + かった] です; Phủ định QK: [A-bỏ i + くなかった] です. Trường hợp đặc biệt: いい -> よくありません -> よかったです.'
         ],
@@ -451,7 +461,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'Tính từ đuôi な: ～です / ～じゃありません / ～でした / ～じゃありませんでした (Adj-na)',
             'meaning' => 'Tính từ đuôi -na ở các dạng Khẳng định, Phủ định, Quá khứ',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-tinh-tu-na/',
+            'link' => get_japanese_grammar_reference_url('Tính từ đuôi な'),
             'example' => 'この町はとても静かです。(Kono machi wa totemo shizuka desu - Thị trấn này rất yên tĩnh.) / 昨日は暇じゃありませんでした。(Kinou wa hima ja arimasendeshita - Hôm qua tôi không rảnh.)',
             'note' => 'Khi làm vị ngữ: chia giống hệt danh từ. Khi bổ nghĩa cho danh từ đứng sau: [A-na] な + [Danh từ] (e.g. 有名な町 - thành phố nổi tiếng).'
         ],
@@ -460,7 +470,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'N1 は N2 が [Tính từ] です (N1 wa N2 ga [Adj] desu)',
             'meaning' => 'N1 thì N2 như thế nào (Thích/Ghét/Giỏi/Kém/Sở hữu)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-wa-ga-tinh-tu/',
+            'link' => get_japanese_grammar_reference_url('N1 は N2 が [Tính từ] です'),
             'example' => '私は日本料理が好きです。(Watashi wa nihon ryouri ga suki desu - Tôi thích món ăn Nhật.) / 彼は歌が上手です。(Kare wa uta ga jouzu desu - Anh ấy hát giỏi.)',
             'note' => 'Các tính từ/động từ chỉ cảm xúc, sở thích, năng lực (好き, 嫌い, 上手, 下手, 欲しい, 分かります) đi với trợ từ が cho đối tượng.'
         ],
@@ -469,7 +479,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'N (Địa điểm) + に + N + が + あります / います (ni ... ga arimasu/imasu)',
             'meaning' => 'Ở [Địa điểm] có [Đồ vật / Người / Động vật]',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-arimasu-imasu/',
+            'link' => get_japanese_grammar_reference_url('N (Địa điểm) + に + N + が + あります / います'),
             'example' => '部屋に机があります。(Heya ni tsukue ga arimasu - Trong phòng có cái bàn.) / 公園に子供がいます。(Kouen ni kodomo ga imasu - Trong công viên có trẻ con.)',
             'note' => 'あります dùng cho đồ vật, đồ vật vô tri, thực vật. います dùng cho con người và động vật có thể chuyển động.'
         ],
@@ -478,7 +488,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'N (Số lượng) + V (Từ chỉ số lượng trong câu)',
             'meaning' => 'Cách dùng từ chỉ số lượng / số đếm trong câu',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-so-luong-tu/',
+            'link' => get_japanese_grammar_reference_url('N (Số lượng) + V'),
             'example' => 'りんごを三つ買いました。(Ringo o mittsu kaimashita - Tôi đã mua 3 quả táo.) / 教室に学生が10人います。(Kyoushitsu ni gakusei ga juu-nin imasu - Trong lớp có 10 học sinh.)',
             'note' => 'Từ chỉ số lượng thường đặt trực tiếp ngay trước động từ mà nó bổ nghĩa, không cần thêm trợ từ ở giữa.'
         ],
@@ -487,7 +497,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'N1 は N2 より [Tính từ] です (N1 wa N2 yori [Adj] desu)',
             'meaning' => 'N1 thì [Tính từ] hơn N2 (So sánh hơn)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-so-sanh-hon/',
+            'link' => get_japanese_grammar_reference_url('N1 は N2 より [Tính từ] です'),
             'example' => '新幹線はバスより速いです。(Shinkansen wa basu yori hayai desu - Tàu Shinkansen nhanh hơn xe buýt.)',
             'note' => 'Cấu trúc so sánh hơn giữa 2 đối tượng. N2 đứng trước より là đối tượng được đem ra làm mốc so sánh.'
         ],
@@ -496,7 +506,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'N1 と N2 と どちらが [Tính từ] ですか (N1 to N2 to dochira ga [Adj] desu ka)',
             'meaning' => 'Giữa N1 và N2 thì cái nào [Tính từ] hơn? (So sánh lựa chọn)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-so-sanh-lua-chon/',
+            'link' => get_japanese_grammar_reference_url('N1 と N2 と どちらが'),
             'example' => '夏と冬とどちらが好きですか。冬のほうが好きです。(Natsu to fuyu to dochira ga suki desu ka. Fuyu no hou ga suki desu - Mùa hè và mùa đông bạn thích mùa nào hơn? Tôi thích mùa đông hơn.)',
             'note' => 'Câu trả lời chuẩn luôn có dạng: [N] のほうが [Tính từ] です (N thì ... hơn).'
         ],
@@ -505,7 +515,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => '[Nhóm/Phạm vi] の中で [N] が 一番 [Tính từ] です (no naka de ... ga ichiban [Adj] desu)',
             'meaning' => 'Trong [Phạm vi] thì [N] là [Tính từ] nhất (So sánh nhất)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-so-sanh-nhat/',
+            'link' => get_japanese_grammar_reference_url('～の中で [N] が 一番 [Tính từ] です'),
             'example' => 'スポーツの中でサッカーが一番面白いです。(Supootsu no naka de sakkaa ga ichiban omoshiroi desu - Trong các môn thể thao thì bóng đá là thú vị nhất.)',
             'note' => '一番 (ichiban) nghĩa là số một / nhất. Mẫu câu hỏi: [Phạm vi] の中で 何 / だれ / どこ / いつ が一番...ですか.'
         ],
@@ -514,7 +524,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'N が 欲しいです (N ga hoshii desu)',
             'meaning' => 'Tôi muốn có [Đồ vật / Danh từ]',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-ga-hoshii/',
+            'link' => get_japanese_grammar_reference_url('N が 欲しいです'),
             'example' => '私は新しいスマートフォンが欲しいです。(Watashi wa atarashii sumaatofon ga hoshii desu - Tôi muốn có một chiếc điện thoại mới.)',
             'note' => '欲しい là tính từ đuôi い, đối tượng mong muốn đi kèm trợ từ が. Chỉ dùng cho mong muốn của ngôi thứ nhất hoặc câu hỏi cho người nghe.'
         ],
@@ -523,7 +533,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'V-たいです / V-たくないです (V-tai desu / V-takunai desu)',
             'meaning' => 'Muốn làm gì / Không muốn làm gì (Mong muốn làm hành động)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-v-tai/',
+            'link' => get_japanese_grammar_reference_url('V-たいです'),
             'example' => '日本へ旅行に行きたいです。(Nihon e ryokou ni ikitai desu - Tôi muốn đi du lịch Nhật Bản.) / 今日は何もしたくないです。(Kyou wa nani mo shitakunai desu - Hôm nay tôi chẳng muốn làm gì cả.)',
             'note' => 'Cách chia: V-bỏ masu + たいです. Trợ từ を có thể đổi thành が trước たい (e.g. お茶が飲みたいです). Chia đuôi như tính từ đuôi い.'
         ],
@@ -532,16 +542,16 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'N (Địa điểm) + へ + V (bỏ masu) / N + に行きます (e ... ni ikimasu)',
             'meaning' => 'Đi / Đến [Địa điểm] để làm [Mục đích]',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-e-ni-ikimasu/',
+            'link' => get_japanese_grammar_reference_url('N (Địa điểm) + へ + V (bỏ masu) / N + に行きます'),
             'example' => 'スーパーへ買い物に行きます。(Suupaa e kaimono ni ikimasu - Đi siêu thị để mua đồ.) / 友達に会いに行きます。(Tomodachi ni ai ni ikimasu - Đi gặp bạn bè.)',
-            'note' => 'Cấu trúc: [Địa điểm] + へ + [Động từ bỏ masu / Danh từ hành động] + に + 行きます / 来ます / 帰ります.'
+            'note' => 'Cấu trúc: [Địa điểm] へ + [Động từ bỏ masu / Danh từ hành động] + に + 行きます / 来ます / 帰ります.'
         ],
         [
             'stt' => 33,
             'level' => 'N5',
             'pattern' => 'V-てください (V-te kudasai)',
             'meaning' => 'Hãy làm gì / Xin vui lòng làm gì (Yêu cầu, nhờ vả lịch sự)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-v-te-kudasai/',
+            'link' => get_japanese_grammar_reference_url('V-てください'),
             'example' => 'ここに住所と名前を書いてください。(Koko ni juusho to namae o kaite kudasai - Xin vui lòng viết địa chỉ và tên vào đây.)',
             'note' => 'Cấu trúc: Động từ thể て + ください. Dùng để chỉ dẫn, nhờ vả hoặc đề nghị người khác làm việc gì đó một cách lịch sự.'
         ],
@@ -550,7 +560,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'V-てもいいです (V-te mo ii desu)',
             'meaning' => 'Được phép làm gì / Làm ... có được không? (Cho phép / Xin phép)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-v-te-mo-ii/',
+            'link' => get_japanese_grammar_reference_url('V-てもいいです'),
             'example' => 'ここで写真を撮ってもいいですか。(Koko de shashin o totte mo ii desu ka - Tôi có thể chụp ảnh ở đây được không?)',
             'note' => 'Cấu trúc: Động từ thể て + もいいです. Dạng câu hỏi "～てもいいですか" dùng khi xin phép làm điều gì.'
         ],
@@ -559,7 +569,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'V-てはいけません (V-te wa ikemasen)',
             'meaning' => 'Không được làm gì (Cấm đoán)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-v-te-wa-ikemasen/',
+            'link' => get_japanese_grammar_reference_url('V-てはいけません'),
             'example' => 'ここでタバコを吸ってはいけません。(Koko de tabako o sutte wa ikemasen - Không được hút thuốc ở đây.)',
             'note' => 'Cấu trúc: Động từ thể て + は + いけません. Biểu thị quy định, điều cấm theo quy định hoặc lời răn đe.'
         ],
@@ -568,7 +578,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'V-ています (V-te imasu)',
             'meaning' => 'Đang làm gì (Tiếp diễn) / Trạng thái kết quả kéo dài / Nghề nghiệp',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-v-te-imasu/',
+            'link' => get_japanese_grammar_reference_url('V-ています'),
             'example' => '今本を読んでいます。(Ima hon o yonde imasu - Bây giờ tôi đang đọc sách.) / 私はハノイに住んでいます。(Watashi wa Hanoi ni sunde imasu - Tôi đang sống ở Hà Nội.)',
             'note' => '3 cách dùng: 1) Hành động đang diễn ra tại thời điểm nói; 2) Trạng thái kết quả (結婚しています, 持っています, 知っています); 3) Thói quen/nghề nghiệp.'
         ],
@@ -577,7 +587,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'V1-て, V2-て, V3-ます (V-te nối câu)',
             'meaning' => 'Làm V1 rồi làm V2 rồi làm V3 (Nối hành động theo thứ tự thời gian)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-v-te-noi-cau/',
+            'link' => get_japanese_grammar_reference_url('V1-て, V2-て, V3-ます'),
             'example' => '朝起きて、シャワーを浴びて、学校へ行きます。(Asa okite, shawaa o abite, gakkou e ikimasu - Buổi sáng thức dậy, tắm vòi sen rồi đi đến trường.)',
             'note' => 'Dùng thể て để liên kết các hành động theo đúng trình tự trước sau. Thì của toàn bộ câu do động từ cuối cùng quyết định.'
         ],
@@ -586,7 +596,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'V1-てから, V2-ます (V1-te kara, V2-masu)',
             'meaning' => 'Sau khi làm V1 xong thì làm V2',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-v-te-kara/',
+            'link' => get_japanese_grammar_reference_url('V1-てから, V2-ます'),
             'example' => '手を洗ってから、食事をします。(Te o aratte kara, shokuji o shimasu - Sau khi rửa tay xong thì ăn cơm.)',
             'note' => 'Nhấn mạnh hành động V1 phải hoàn tất xong xuôi trước rồi mới bắt đầu hành động V2.'
         ],
@@ -595,7 +605,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'V-ないでください (V-naide kudasai)',
             'meaning' => 'Xin đừng làm gì (Yêu cầu phủ định lịch sự)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-v-naide-kudasai/',
+            'link' => get_japanese_grammar_reference_url('V-ないでください'),
             'example' => 'ここに車を止めないでください。(Koko ni kuruma o tomenaide kudasai - Xin đừng đỗ xe ở đây.)',
             'note' => 'Cấu trúc: Động từ thể ない + でください. Dùng để yêu cầu người khác không làm việc gì đó.'
         ],
@@ -604,7 +614,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'V-なければなりません (V-nakereba narimasen)',
             'meaning' => 'Phải làm gì / Bắt buộc phải làm (Nghĩa vụ)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-v-nakereba-narimasen/',
+            'link' => get_japanese_grammar_reference_url('V-なければなりません'),
             'example' => '明日テストがありますから、勉強しなければなりません。(Ashita tesuto ga arimasu kara, benkyou shinakereba narimasen - Vì ngày mai có bài thi nên tôi phải học bài.)',
             'note' => 'Cấu trúc: Động từ thể ない (bỏ い) + ければなりません. Thể hiện sự cần thiết, bổn phận bắt buộc phải thực hiện.'
         ],
@@ -613,7 +623,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'V-なくてもいいです (V-nakutemo ii desu)',
             'meaning' => 'Không cần phải làm gì / Không làm cũng không sao',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-v-nakutemo-ii/',
+            'link' => get_japanese_grammar_reference_url('V-なくてもいいです'),
             'example' => '明日は日曜日ですから、早く起きなくてもいいです。(Ashita wa nichiyoubi desu kara, hayaku okinakutemo ii desu - Vì ngày mai là chủ nhật nên không cần phải dậy sớm.)',
             'note' => 'Cấu trúc: Động từ thể ない (bỏ い) + くてもいいです. Biểu thị việc không nhất thiết phải làm.'
         ],
@@ -622,7 +632,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'V (Thể từ điển) + ことができます (V-jisho koto ga dekimasu)',
             'meaning' => 'Có thể làm gì / Biết làm gì (Khả năng & điều kiện)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-koto-ga-dekimasu/',
+            'link' => get_japanese_grammar_reference_url('V (Thể từ điển) + ことができます'),
             'example' => '私は日本語を話すことができます。(Watashi wa nihongo o hanasu koto ga dekimasu - Tôi có thể nói được tiếng Nhật.) / このホテルで両替ができます。(Kono hoteru de ryougae ga dekimasu - Có thể đổi tiền ở khách sạn này.)',
             'note' => 'Cấu trúc: [Động từ thể từ điển] + ことができます. Danh từ hóa động từ bằng こと để diễn tả năng lực hoặc điều kiện cho phép.'
         ],
@@ -631,7 +641,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'V (Thể từ điển) / N の + 前に (mae ni)',
             'meaning' => 'Trước khi làm gì / Trước một sự kiện/thời điểm',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-mae-ni/',
+            'link' => get_japanese_grammar_reference_url('V (Thể từ điển) / N の + 前に'),
             'example' => '寝る前に日記を書きます。(Neru mae ni nikki o kakimasu - Trước khi đi ngủ tôi viết nhật ký.) / 食事の前に手を洗います。(Shokuji no mae ni te o araimasu - Rửa tay trước bữa ăn.)',
             'note' => 'Động từ trước 前に luôn ở thể nguyên dạng (Thể từ điển), bất kể câu ở thì hiện tại hay quá khứ.'
         ],
@@ -640,7 +650,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'V-たことがあります (V-ta koto ga arimasu)',
             'meaning' => 'Đã từng làm gì (Kinh nghiệm, trải nghiệm trong quá khứ)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-ta-koto-ga-arimasu/',
+            'link' => get_japanese_grammar_reference_url('V-たことがあります'),
             'example' => '日本へ行ったことがあります。(Nihon e itta koto ga arimasu - Tôi đã từng đi Nhật Bản.) / 寿司を食べたことがあります。(Sushi o tabeta koto ga arimasu - Tôi đã từng ăn sushi.)',
             'note' => 'Cấu trúc: Động từ thể た + ことがあります. Dùng để nói về trải nghiệm từng có. Phủ định: ～たことがありません (chưa từng làm bao giờ).'
         ],
@@ -649,7 +659,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'V1-たり, V2-たりします (V-tari, V-tari shimasu)',
             'meaning' => 'Lúc thì làm V1, lúc thì làm V2 (Liệt kê hành động tiêu biểu)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-v-tari-v-tari/',
+            'link' => get_japanese_grammar_reference_url('V1-たり, V2-たりします'),
             'example' => '休みの日は本を読んだり、音楽を聞いたりします。(Yasumi no hi wa hon o yondari, ongaku o kiitari shimasu - Ngày nghỉ tôi lúc thì đọc sách, lúc thì nghe nhạc.)',
             'note' => 'Cấu trúc: Động từ thể た + り. Dùng để liệt kê vài hành động tiêu biểu đại diện, không cần quan tâm thứ tự trước sau.'
         ],
@@ -658,7 +668,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => '[Tính từ/N] + になります / くなります (ni narimasu / ku narimasu)',
             'meaning' => 'Trở nên / Trở thành ... (Biến đổi trạng thái)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-ni-narimasu/',
+            'link' => get_japanese_grammar_reference_url('[Tính từ/N] + になります / くなります'),
             'example' => '寒くなりました。(Samuku narimashita - Trời đã trở nên lạnh hơn.) / 来年医者になります。(Rainen isha ni narimasu - Sang năm tôi sẽ trở thành bác sĩ.)',
             'note' => 'Tính từ -i: bỏ い + くなります. Tính từ -na & Danh từ: + になります.'
         ],
@@ -667,7 +677,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'V (Thể thông thường) + と思います (to omoimasu)',
             'meaning' => 'Tôi nghĩ rằng ... / Dự đoán rằng ... (Ý kiến, phỏng đoán)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-to-omoimasu/',
+            'link' => get_japanese_grammar_reference_url('V (Thể thông thường) + と思います'),
             'example' => '明日は雨が降ると思います。(Ashita wa ame ga furu to omoimasu - Tôi nghĩ rằng ngày mai trời sẽ mưa.)',
             'note' => 'Mệnh đề trước と chia ở thể thông thường (Futsuukei). Dùng để bày tỏ quan điểm, ý kiến cá nhân hoặc dự đoán.'
         ],
@@ -676,7 +686,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'V (Thể thông thường) + と言いました (to iimashita)',
             'meaning' => 'Đã nói rằng ... (Trích dẫn gián tiếp hoặc trực tiếp)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-to-iimashita/',
+            'link' => get_japanese_grammar_reference_url('V (Thể thông thường) + と言いました'),
             'example' => '田中さんは「明日休みます」と言いました。(Tanaka-san wa \"Ashita yasumimasu\" to iimashita - Anh Tanaka đã nói rằng \"Ngày mai tôi nghỉ\".)',
             'note' => 'Trích dẫn trực tiếp: để trong ngoặc kép 「...」; Trích dẫn gián tiếp: đổi sang thể thông thường + と言いました.'
         ],
@@ -685,7 +695,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => '～でしょう / ～だろう (deshou / darou)',
             'meaning' => 'Có lẽ là ... / ... phải không? (Phỏng đoán / Xác nhận)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-deshou/',
+            'link' => get_japanese_grammar_reference_url('～でしょう / ～だろう'),
             'example' => '明日は天気がいいでしょう。(Ashita wa tenki ga ii deshou - Ngày mai có lẽ thời tiết sẽ đẹp.)',
             'note' => 'Đi với thể thông thường (Tính từ -na và Danh từ bỏ だ). Đọc lên giọng cuối câu dùng để hỏi xác nhận ý kiến người nghe.'
         ],
@@ -694,7 +704,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => '[Mệnh đề] + から / ので (kara / node)',
             'meaning' => 'Bởi vì ... nên ... (Nguyên nhân, lý do)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-kara-node/',
+            'link' => get_japanese_grammar_reference_url('[Mệnh đề] + から / ので'),
             'example' => '時間がありませんから、急ぎましょう。(Jikan ga arimasen kara, isogimashou - Vì không có thời gian nên hãy nhanh lên nào.)',
             'note' => 'から thể hiện quan điểm chủ quan của người nói. ので mang tính khách quan, trang trọng và lịch sự hơn.'
         ],
@@ -703,7 +713,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => '～けど / ～が (kedo / ga)',
             'meaning' => '... nhưng mà ... (Nối 2 vế câu tương phản)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-kedo-ga/',
+            'link' => get_japanese_grammar_reference_url('～けど / ～が'),
             'example' => '日本の料理はおいしいですが、高いです。(Nihon no ryouri wa oishii desu ga, takai desu - Món ăn Nhật ngon nhưng đắt.)',
             'note' => 'が dùng trong văn viết và giao tiếp trang trọng. けど thân mật hơn, chủ yếu dùng trong hội thoại văn nói hàng ngày.'
         ],
@@ -712,7 +722,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N5',
             'pattern' => 'Trợ từ cuối câu: ～ね / ～よ (ne / yo)',
             'meaning' => '～ね: nhé/nhỉ (đồng cảm, xác nhận); ～よ: đấy/nhé (nhấn mạnh thông tin mới)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n5-ne-yo/',
+            'link' => get_japanese_grammar_reference_url('Trợ từ cuối câu: ～ね / ～よ'),
             'example' => '今日はいい天気ですね。(Kyou wa ii tenki desu ne - Hôm nay thời tiết đẹp nhỉ.) / この料理はとてもおいしいですよ。(Kono ryouri wa totemo oishii desu yo - Món này ngon lắm đấy nhé.)',
             'note' => 'ね dùng khi người nói nghĩ người nghe cũng cùng quan điểm. よ dùng khi người nói muốn thông báo hoặc nhấn mạnh điều người nghe chưa biết.'
         ]
@@ -724,7 +734,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N4',
             'pattern' => '～んです / ～のです (~ ndesu / ~ no desu)',
             'meaning' => 'Vì là, giải thích nguyên nhân, lý do, nhấn mạnh tình huống',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n4-ndesu/',
+            'link' => get_japanese_grammar_reference_url('～んです / ～のです'),
             'example' => '頭が痛いんです。(Atama ga itai ndesu - Vì tôi bị đau đầu.)',
             'note' => 'Động từ/Tính từ thể thông thường + んです. Tính từ -na và Danh từ + なんです.'
         ],
@@ -733,7 +743,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N4',
             'pattern' => 'V-ていただけませんか (V-te itadakemasen ka)',
             'meaning' => 'Làm ơn ... giúp tôi có được không? (Nhờ vả rất lịch sự)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n4-te-itadakemasen-ka/',
+            'link' => get_japanese_grammar_reference_url('V-ていただけませんか'),
             'example' => '日本語を教えていただけませんか。(Nihongo o oshiete itadakemasen ka - Làm ơn dạy tiếng Nhật cho tôi có được không ạ?)',
             'note' => 'Động từ thể て + いただけませんか. Mức độ lịch sự cao hơn V-てください rất nhiều.'
         ],
@@ -742,7 +752,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N4',
             'pattern' => '～たら (~ tara)',
             'meaning' => 'Nếu ..., Sau khi ... (Điều kiện giả định & thời gian)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n4-tara/',
+            'link' => get_japanese_grammar_reference_url('～たら'),
             'example' => '雨が降ったら、出かけません。(Ame ga futtara, dekakemasen - Nếu trời mưa tôi sẽ không ra ngoài.) / 駅に着いたら、電話してください。(Eki ni tsuitara, denwa shite kudasai - Sau khi đến ga hãy gọi cho tôi.)',
             'note' => 'Động từ thể Quá khứ ngắn (thể た) + ら.'
         ],
@@ -751,7 +761,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N4',
             'pattern' => '～ば (~ ba)',
             'meaning' => 'Nếu ... (Điều kiện thể giả định - Ba-kei)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n4-ba/',
+            'link' => get_japanese_grammar_reference_url('～ば'),
             'example' => '安ければ、買います。(Yasukereba, kaimasu - Nếu rẻ thì tôi sẽ mua.) / 勉強すれば、合格できます。(Benkyou sureba, goukaku dekimasu - Nếu học thì có thể đỗ.)',
             'note' => 'Động từ nhóm 1: đổi âm u -> e + ば; nhóm 2: bỏ ru + れば; nhóm 3: すれば, くれば.'
         ],
@@ -760,7 +770,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N4',
             'pattern' => '～なら (~ nara)',
             'meaning' => 'Nếu là ... / Nếu nói về ... (Tiếp nhận chủ đề và đưa ra lời khuyên)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n4-nara/',
+            'link' => get_japanese_grammar_reference_url('～なら'),
             'example' => '日本料理なら、寿司が一番好きです。(Nihon ryouri nara, sushi ga ichiban suki desu - Nếu là món Nhật thì tôi thích sushi nhất.)',
             'note' => 'Danh từ / Tính từ / Thể thông thường + なら. Dùng để đưa ra ý kiến, lời khuyên dựa trên chủ đề người nghe vừa nói.'
         ],
@@ -769,7 +779,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N4',
             'pattern' => '～ても / ～でも (~ temo / ~ demo)',
             'meaning' => 'Dù ... nhưng ..., Cho dù có ... đi nữa',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n4-temo/',
+            'link' => get_japanese_grammar_reference_url('～ても / ～でも'),
             'example' => '高くても、買いたいです。(Takakutemo, kaitai desu - Dù đắt nhưng tôi vẫn muốn mua.)',
             'note' => 'Động từ thể て + も; Tính từ -i bỏ い + くても; Tính từ -na & Danh từ + でも.'
         ],
@@ -778,7 +788,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N4',
             'pattern' => '～てあげる / ～てもらう / ～てくれる (~ te ageru / te morau / te kureru)',
             'meaning' => 'Làm giúp cho ai / Được ai làm cho / Ai làm giúp cho mình',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n4-cho-nhan/',
+            'link' => get_japanese_grammar_reference_url('～てあげる / ～てもらう / ～てくれる'),
             'example' => '友達が荷物を持ってくれました。(Tomodachi ga nimotsu o motte kuremashita - Bạn tôi đã mang hành lý giúp tôi.)',
             'note' => 'Bộ 3 động từ cho nhận hành động cực kỳ quan trọng trong giao tiếp tiếng Nhật.'
         ],
@@ -787,7 +797,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N4',
             'pattern' => '～そうです (Trực quan: có vẻ / Nghe nói)',
             'meaning' => 'Có vẻ sắp ... (Trực quan) / Nghe nói rằng ... (Truyền đạt)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n4-sou-desu/',
+            'link' => get_japanese_grammar_reference_url('～そうです'),
             'example' => '今にも雨が降りそうです。(Ima nimo ame ga furisou desu - Có vẻ trời sắp mưa đến nơi rồi.) / 明日は雨だそうです。(Ashita wa ame da sou desu - Nghe nói ngày mai trời mưa.)',
             'note' => 'V-bỏ masu + そうです: có vẻ; Thể thông thường + そうです: nghe nói.'
         ],
@@ -796,7 +806,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N4',
             'pattern' => '～すぎる (~ sugiru)',
             'meaning' => 'Quá mức ... (Vượt quá giới hạn bình thường)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n4-sugiru/',
+            'link' => get_japanese_grammar_reference_url('～すぎる'),
             'example' => '昨日お酒を飲みすぎました。(Kinou osake o nomisugimashita - Hôm qua tôi đã uống quá nhiều rượu.)',
             'note' => 'V-bỏ masu / Tính từ -i bỏ い / Tính từ -na + すぎる. Chia như động từ nhóm 2.'
         ],
@@ -805,7 +815,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N4',
             'pattern' => '～やすい / ～にくい (~ yasui / ~ nikui)',
             'meaning' => 'Dễ làm gì / Khó làm gì',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n4-yasui-nikui/',
+            'link' => get_japanese_grammar_reference_url('～やすい / ～にくい'),
             'example' => 'この薬は飲みやすいです。(Kono kusuri wa nomiyasui desu - Thuốc này rất dễ uống.)',
             'note' => 'V-bỏ masu + やすい / にくい. Đóng vai trò như một tính từ đuôi い.'
         ],
@@ -814,7 +824,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N4',
             'pattern' => '～てしまう (~ te shimau)',
             'meaning' => 'Đã lỡ làm gì (Tiếc nuối) / Làm xong hoàn tất toàn bộ',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n4-te-shimau/',
+            'link' => get_japanese_grammar_reference_url('～てしまう'),
             'example' => 'パスポートを忘れてしまいました。(Pasupooto o wasurete shimaimashita - Tôi đã lỡ quên hộ chiếu mất rồi.)',
             'note' => 'Động từ thể て + しまう. Văn nói thân mật thường rút gọn thành ちゃう / じゃう.'
         ],
@@ -823,7 +833,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N4',
             'pattern' => '～受身動詞 (Động từ bị động: ～れる / ～られる)',
             'meaning' => 'Bị / Được làm gì (Thể bị động Ukemi)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n4-bi-dong/',
+            'link' => get_japanese_grammar_reference_url('～受身動詞'),
             'example' => '私は先生に褒められました。(Watashi wa sensei ni homeraremashita - Tôi đã được thầy giáo khen ngợi.)',
             'note' => 'Nhóm 1: đổi âm u -> a + れる; Nhóm 2: bỏ ru + られる; Nhóm 3: される, こられる.'
         ],
@@ -832,7 +842,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N4',
             'pattern' => '～使役動詞 (Động từ sai khiến: ～せる / ～させる)',
             'meaning' => 'Bắt / Cho phép ai làm gì (Thể sai khiến Shieki)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n4-sai-khien/',
+            'link' => get_japanese_grammar_reference_url('～使役動詞'),
             'example' => '先生は生徒に本を読ませました。(Sensei wa seito ni hon o yomasemashita - Thầy giáo bắt học sinh đọc sách.)',
             'note' => 'Nhóm 1: đổi âm u -> a + せる; Nhóm 2: bỏ ru + させる; Nhóm 3: させる, こさせる.'
         ],
@@ -841,7 +851,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N4',
             'pattern' => '～ように / ～ために (~ you ni / ~ tame ni)',
             'meaning' => 'Để ... (Chỉ mục đích)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n4-you-ni-tame-ni/',
+            'link' => get_japanese_grammar_reference_url('～ように / ～ために'),
             'example' => '試験に合格できるように、毎日勉強します。(Shiken ni goukaku dekiru you ni, mainichi benkyou shimasu - Để có thể đỗ kỳ thi, mỗi ngày tôi đều học.)',
             'note' => 'ように đi với động từ không có ý chí / thể khả năng; ために đi với động từ có ý chí / danh từ の.'
         ],
@@ -850,7 +860,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N4',
             'pattern' => '～はずです (~ hazu desu)',
             'meaning' => 'Chắc chắn là ... (Phán đoán có căn cứ xác thực)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n4-hazu-desu/',
+            'link' => get_japanese_grammar_reference_url('～はずです'),
             'example' => '彼は今日来るはずです。(Kare wa kyou kuru hazu desu - Chắc chắn hôm nay anh ấy sẽ đến.)',
             'note' => 'Thể thông thường + はずです. Tính từ -na + なはず, Danh từ + のはず.'
         ],
@@ -859,7 +869,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N4',
             'pattern' => '～かもしれません (~ kamo shiremasen)',
             'meaning' => 'Có thể là, có lẽ là ... (Xác suất khoảng 50%)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n4-kamo-shiremasen/',
+            'link' => get_japanese_grammar_reference_url('～かもしれません'),
             'example' => '午後は雨が降るかもしれません。(Gogo wa ame ga furu kamo shiremasen - Buổi chiều có lẽ trời sẽ mưa.)',
             'note' => 'Thể thông thường (Tính từ -na và Danh từ không có だ) + かもしれません.'
         ],
@@ -868,7 +878,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N4',
             'pattern' => '～つもりです / ～予定です (~ tsumori desu / ~ yotei desu)',
             'meaning' => 'Dự định làm gì / Kế hoạch làm gì',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n4-tsumori-yotei/',
+            'link' => get_japanese_grammar_reference_url('～つもりです / ～予定です'),
             'example' => '来年日本へ行くつもりです。(Rainen Nihon e iku tsumori desu - Sang năm tôi dự định sẽ đi Nhật.)',
             'note' => 'V (Thể từ điển / Thể ない) + つもりです. V (Thể từ điển) / N の + 予定です.'
         ],
@@ -877,7 +887,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N4',
             'pattern' => '～まま (~ mama)',
             'meaning' => 'Để nguyên trạng thái ..., Cứ giữ nguyên ...',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n4-mama/',
+            'link' => get_japanese_grammar_reference_url('～まま'),
             'example' => '靴を履いたまま、部屋に入ってはいけません。(Kutsu o haita mama, heya ni haitte wa ikemasen - Không được đi cả giày vào trong phòng.)',
             'note' => 'V-た / V-ない / N の + まま.'
         ]
@@ -889,7 +899,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N3',
             'pattern' => '～わけだ (~ wake da)',
             'meaning' => 'Thảo nào, hèn chi, đương nhiên là ...',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n3-wake-da/',
+            'link' => get_japanese_grammar_reference_url('～わけだ'),
             'example' => '暑いわけだ。気温が38度もある。(Atsui wake da. Kion ga sanjuuhachi-do mo aru - Thảo nào nóng thế. Nhiệt độ lên tới 38 độ.)',
             'note' => 'Thể thông thường (Tính từ -na + な, Danh từ + である/の) + わけだ.'
         ],
@@ -898,7 +908,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N3',
             'pattern' => '～わけがない (~ wake ga nai)',
             'meaning' => 'Tuyệt đối không thể nào ..., Làm sao mà ... được',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n3-wake-ga-nai/',
+            'link' => get_japanese_grammar_reference_url('～わけがない'),
             'example' => 'そんな難しいこと、彼にできるわけがない。(Sonna muzukashii koto, kare ni dekiru wake ga nai - Việc khó như thế làm sao anh ấy làm được.)',
             'note' => 'Thể hiện sự phủ định mạnh mẽ dựa trên lý lẽ chắc chắn.'
         ],
@@ -907,7 +917,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N3',
             'pattern' => '～わけではない (~ wake dewa nai)',
             'meaning' => 'Không hẳn là, không có nghĩa là ... (Phủ định một phần)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n3-wake-dewa-nai/',
+            'link' => get_japanese_grammar_reference_url('～わけではない'),
             'example' => '嫌いなわけではないが、あまり食べたくない。(Kirai na wake dewa nai ga, amari tabetakunai - Không hẳn là tôi ghét, nhưng tôi không muốn ăn lắm.)',
             'note' => 'Phủ định nhẹ nhàng để tránh nói tuyệt đối.'
         ],
@@ -916,7 +926,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N3',
             'pattern' => '～ことになっている (~ koto ni natte iru)',
             'meaning' => 'Được quy định là ..., Theo lịch trình/quy tắc là ...',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n3-koto-ni-natte-iru/',
+            'link' => get_japanese_grammar_reference_url('～ことになっている'),
             'example' => '法律で20歳未満は酒を飲んではいけないことになっている。(Houritsu de nijuusai miman wa sake o nonde wa ikenai koto ni natte iru - Theo luật quy định người dưới 20 tuổi không được uống rượu.)',
             'note' => 'Diễn tả quy tắc, quy định chung hoặc tập quán của xã hội/tổ chức.'
         ],
@@ -925,7 +935,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N3',
             'pattern' => '～に対して (~ ni taishite)',
             'meaning' => 'Đối với ... / Trái ngược với ...',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n3-ni-taishite/',
+            'link' => get_japanese_grammar_reference_url('～に対して'),
             'example' => 'お客様に対して礼儀正しくしてください。(Okyakusama ni taishite reigi tadashiku shite kudasai - Hãy lịch sự đối với khách hàng.)',
             'note' => 'N + に対して / N1 に対する N2.'
         ],
@@ -934,7 +944,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N3',
             'pattern' => '～に関して (~ ni kanshite)',
             'meaning' => 'Liên quan đến ..., Về vấn đề ...',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n3-ni-kanshite/',
+            'link' => get_japanese_grammar_reference_url('～に関して'),
             'example' => '環境問題に関して議論しました。(Kankyou mondai ni kanshite giron shimashita - Đã thảo luận về vấn đề môi trường.)',
             'note' => 'Trang trọng hơn について. N + に関して / N1 に関する N2.'
         ],
@@ -943,7 +953,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N3',
             'pattern' => '～によると / ～によれば (~ ni yoru to / ~ ni yoreba)',
             'meaning' => 'Căn cứ theo ..., Theo nguồn tin từ ...',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n3-ni-yoru-to/',
+            'link' => get_japanese_grammar_reference_url('～によると'),
             'example' => '天気予報によると、明日は晴れるそうです。(Tenki yohou ni yoru to, ashita wa hareru sou desu - Theo dự báo thời tiết thì ngày mai trời sẽ nắng.)',
             'note' => 'Chỉ nguồn thông tin, vế sau thường kết hợp với ～そうだ / ～ということだ.'
         ],
@@ -952,7 +962,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N3',
             'pattern' => '～おかげで / ～せいで (~ okage de / ~ sei de)',
             'meaning' => 'Nhờ có ... (Kết quả tốt) / Tại vì ... (Kết quả xấu, trách móc)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n3-okage-sei/',
+            'link' => get_japanese_grammar_reference_url('～おかげで / ～せいで'),
             'example' => '先生のおかげで、試験に合格しました。(Sensei no okage de, shiken ni goukaku shimashita - Nhờ có thầy giáo mà tôi đã đỗ kỳ thi.)',
             'note' => 'おかげで dùng cho kết quả tích cực, せいで dùng cho kết quả tiêu cực.'
         ],
@@ -961,7 +971,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N3',
             'pattern' => '～うちに (~ uchi ni)',
             'meaning' => 'Trong khi còn ... (Tranh thủ trước khi trạng thái thay đổi)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n3-uchi-ni/',
+            'link' => get_japanese_grammar_reference_url('～うちに'),
             'example' => '温かいうちに召し上がってください。(Atatakai uchi ni meshiagatte kudasai - Xin hãy dùng bữa trong khi món ăn còn nóng.)',
             'note' => 'V-te iru / V-nai / Adj-i / Adj-na な / N の + うちに.'
         ],
@@ -970,13 +980,12 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N3',
             'pattern' => '～たびに (~ tabi ni)',
             'meaning' => 'Mỗi lần ... lại ..., Cứ mỗi khi ... thì lại ...',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n3-tabi-ni/',
+            'link' => get_japanese_grammar_reference_url('～たびに'),
             'example' => 'この写真を見るたびに、家族を思い出します。(Kono shashin o miru tabi ni, kazoku o omoidashimasu - Mỗi lần xem bức ảnh này tôi lại nhớ gia đình.)',
             'note' => 'V (Thể từ điển) / N の + たびに.'
         ]
     ];
 
-    // Load N2 Grammar from data/N2 JP Grammar.html
     $n2Items = [];
     $dataDir = $config['data_dir'] ?? (__DIR__ . '/../data');
     $n2File = $dataDir . '/N2 JP Grammar.html';
@@ -1002,7 +1011,7 @@ function get_japanese_grammar_data(array $config = []): array
                     'level' => 'N2',
                     'pattern' => $pattern,
                     'meaning' => $meaning !== '' ? $meaning : 'Ngữ pháp JLPT N2 chuyên sâu',
-                    'link' => $link,
+                    'link' => get_japanese_grammar_reference_url($pattern),
                     'example' => "Ví dụ minh họa mẫu câu: {$pattern}",
                     'note' => 'Mẫu câu ngữ pháp trung - cao cấp JLPT N2. Xem chi tiết cấu trúc kết hợp qua link hướng dẫn.'
                 ];
@@ -1016,7 +1025,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N1',
             'pattern' => '～極まりない / ～極まる (~ kiwamarinai / ~ kiwamaru)',
             'meaning' => 'Vô cùng, cực kỳ ... (Đến mức tột cùng)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n1-kiwamarinai/',
+            'link' => get_japanese_grammar_reference_url('～極まりない'),
             'example' => '彼の態度は失礼極まりない。(Kare no taido wa shitsurei kiwamarinai - Thái độ của anh ta vô cùng thất lễ.)',
             'note' => 'Tính từ -na (bỏ な) / Tính từ -i + 極まりない. Dùng trong văn cảnh trang trọng.'
         ],
@@ -1025,7 +1034,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N1',
             'pattern' => '～を皮切りに (~ o kawakiri ni)',
             'meaning' => 'Khởi đầu với ..., Bắt đầu bằng việc ...',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n1-o-kawakiri-ni/',
+            'link' => get_japanese_grammar_reference_url('～を皮切りに'),
             'example' => '東京公演を皮切りに、全国ツアーがスタートした。(Toukyou kouen o kawakiri ni, zenkoku tsuaa ga sutaato shita - Khởi đầu với buổi diễn tại Tokyo, tour lưu diễn toàn quốc đã bắt đầu.)',
             'note' => 'N + を皮切りに(して) / を皮切りとして.'
         ],
@@ -1034,7 +1043,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N1',
             'pattern' => '～であれ / ～であろうと (~ de are / ~ de arou to)',
             'meaning' => 'Cho dù là ..., Dù có là ai/cái gì đi chăng nữa',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n1-de-are/',
+            'link' => get_japanese_grammar_reference_url('～であれ'),
             'example' => 'たとえ大統領であれ、法律を守らなければならない。(Tatoe daitouryou de are, houritsu o mamoranakereba naranai - Cho dù có là tổng thống thì cũng phải tuân thủ pháp luật.)',
             'note' => 'N / Từ để hỏi + であれ.'
         ],
@@ -1043,7 +1052,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N1',
             'pattern' => '～たるもの (~ taru mono)',
             'meaning' => 'Đã là ..., Trên cương vị là ... (Phải có tư cách xứng đáng)',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n1-taru-mono/',
+            'link' => get_japanese_grammar_reference_url('～たるもの'),
             'example' => '指導者たるもの、常に冷静でなければならない。(Shidousha taru mono, tsuneni reisei de nakereba naranai - Đã là người lãnh đạo thì luôn phải giữ được sự bình tĩnh.)',
             'note' => 'N (chỉ chức vụ, nghề nghiệp, tư cách) + たるもの.'
         ],
@@ -1052,7 +1061,7 @@ function get_japanese_grammar_data(array $config = []): array
             'level' => 'N1',
             'pattern' => '～まじき (~ majiki)',
             'meaning' => 'Không thể chấp nhận được, Không được phép đối với ...',
-            'link' => 'http://tiengnhat.minder.vn/ngu-phap-jlpt-n1-majiki/',
+            'link' => get_japanese_grammar_reference_url('～まじき'),
             'example' => 'それはプロとしてあるまじき行為だ。(Sore wa puro to shite aru majiki koui da - Đó là hành vi không thể chấp nhận được đối với một người chuyên nghiệp.)',
             'note' => 'V (Thể từ điển) + まじき + N.'
         ]
