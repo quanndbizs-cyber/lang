@@ -53,22 +53,32 @@ class LessonController {
     /**
      * Xử lý AJAX ghi nhận hoàn thành từng chặng bài học
      */
-    public function completeStage() {
-        header('Content-Type: application/json');
+ public function completeStage() {
+    // 1. Nhận dữ liệu gửi từ thẻ <a> thông qua $_GET
+    $lang = $_GET['lang'] ?? 'en';
+    $levelKey = $_GET['level'] ?? 'level_1';
+    $day = (int)($_GET['day'] ?? 1);
+    $currentStage = (int)($_GET['stage'] ?? 1);
+    
+    // 2. Lưu tiến trình của chặng vừa hoàn thành vào SESSION
+    $_SESSION['user_progress'][$lang][$levelKey][$day]['stages'][$currentStage] = true;
+    $_SESSION['user_xp'] = ($_SESSION['user_xp'] ?? 0) + 10; // Cộng 10 XP 🪙
+
+    $totalStages = 3; // Tổng số chặng trong 1 bài học
+
+    // 3. Kiểm tra điều kiện chuyển hướng 🔀
+    if ($currentStage < $totalStages) {
+        // ➡️ Chưa xong bài: Chuyển sang Chặng tiếp theo (stage + 1)
+        $nextStage = $currentStage + 1;
+        header("Location: index.php?action=lesson&lang={$lang}&level={$levelKey}&day={$day}&stage={$nextStage}");
+        exit();
+    } else {
+        // 🎉 Đã hoàn thành Chặng 3: Đánh dấu xong toàn bộ bài học!
+        $_SESSION['user_progress'][$lang][$levelKey][$day]['completed'] = true;
         
-        $lang = $_POST['lang'] ?? 'en';
-        $day = (int)($_POST['day'] ?? 1);
-        $stageIndex = (int)($_POST['stage'] ?? 1);
-        $xpEarned = 15; // +15 XP cho mỗi chặng hoàn thành
-
-        $result = $this->model->saveStageProgress($lang, $day, $stageIndex, $xpEarned);
-
-        echo json_encode([
-            'success' => true,
-            'message' => "Hoàn thành Chặng {$stageIndex}! +{$xpEarned} XP",
-            'total_xp' => $result['total_xp'],
-            'completed' => $result['completed']
-        ]);
-        exit;
+        // 🏠 Quay về Trang chủ Khóa học để sẵn sàng cho bài học/bài test tiếp theo
+        header("Location: index.php?action=courses&lang={$lang}&level={$levelKey}&completed_day={$day}");
+        exit();
     }
+  }
 }

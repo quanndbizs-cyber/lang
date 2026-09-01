@@ -22,7 +22,8 @@
     <hr style="border: 0; height: 1px; background: #e2e8f0; margin-bottom: 25px;">
 
     <!-- 🟢 CHẶNG 1: TỪ VỰNG & GAME -->
-    <div class="stage-card">
+    <div id="stage-1" class="stage-block">
+	  <div class="stage-card">
         <span class="badge">Chặng 1 🎮</span>
         <h3>Từ vựng & Mini-game</h3>
         <p>Học từ vựng cơ bản và ghép từ tương ứng:</p>
@@ -38,12 +39,16 @@
                 <p>Nội dung từ vựng đang được cập nhật...</p>
             <?php endif; ?>
         </div>
+	</div>
 
-        <button class="btn-complete" onclick="completeStage(1)">✓ Hoàn thành Chặng 1</button>
+        <a href="index.php?action=complete_stage&lang=<?= $lang ?>&level=<?= $levelKey ?>&day=<?= $day ?>&stage=1" class="btn-next">
+    Hoàn thành Chặng 1 & Sang Chặng 2 ➔</a>
     </div>
+  </div>
 
     <!-- 🟡 CHẶNG 2: PHÁT ÂM & NGHE (MULTIMEDIA EMBEDDED) -->
-    <div class="stage-card">
+    <div id="stage-2" class="stage-block">
+	<div class="stage-card">
         <span class="badge">Chặng 2 🎧</span>
         <h3>Luyện Phát âm & Nghe phản xạ</h3>
         
@@ -61,19 +66,24 @@
             </div>
         <?php endif; ?>
 
-        <button class="btn-complete" onclick="completeStage(2)">✓ Hoàn thành Chặng 2</button>
+        <a href="index.php?action=complete_stage&lang=<?= $lang ?>&level=<?= $levelKey ?>&day=<?= $day ?>&stage=2" class="btn-next">
+    Hoàn thành Chặng 2 & Sang Chặng 3 ➔</a>
+    </div>
     </div>
 
     <!-- 🔴 CHẶNG 3: NGỮ PHÁP & ĐỌC HIỂU -->
-    <div class="stage-card">
+    <div id="stage-3" class="stage-block">
+	<div class="stage-card">
         <span class="badge">Chặng 3 📖</span>
         <h3>Ngữ pháp & Đọc truyện ngắn</h3>
         <div class="reading-content">
             <?= $lesson['stages'][3]['content'] ?? 'Nội dung đọc hiểu...' ?>
         </div>
 
-        <button class="btn-complete" onclick="completeStage(3)">✓ Hoàn thành Chặng 3 & Nhận XP</button>
+        <a href="index.php?action=complete_stage&lang=<?= $lang ?>&level=<?= $levelKey ?>&day=<?= $day ?>&stage=3" class="btn-next">
+    Hoàn thành Bài học 🎉</a>
     </div>
+  </div>
 </div>
 
 <script>
@@ -99,6 +109,26 @@ function completeStage(stageNum) {
     })
     .catch(error => console.error('Error:', error));
 }
+</script>
+
+<!-- Scroll đến chặng tiếp theo  -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Lấy số chặng từ URL (ví dụ: ?stage=2)
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentStage = urlParams.get('stage') || '1';
+    
+    // Tìm phần tử chặng tương ứng
+    const targetStage = document.getElementById('stage-' + currentStage);
+    
+    if (targetStage) {
+        // Tự động cuộn mượt đến vị trí của chặng đó
+        targetStage.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+        });
+    }
+});
 </script>
 
 </body>
