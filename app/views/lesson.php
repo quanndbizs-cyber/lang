@@ -16,7 +16,7 @@
 <body>
 
 <div class="container" style="max-width: 800px; margin: 20px auto; padding: 0 15px;">
-    <p><a href="index.php?action=home&lang=<?= urlencode($lang) ?>">← Quay lại Bản đồ bài học</a></p>
+    <p><a href="index.php?action=courses&lang=<?= urlencode($lang) ?>">← Quay lại Bản đồ bài học</a></p>
     
     <h2>📅 Bài học Ngày <?= htmlspecialchars($day) ?>: <?= htmlspecialchars($lesson['title'] ?? 'Luyện tập') ?></h2>
     <hr style="border: 0; height: 1px; background: #e2e8f0; margin-bottom: 25px;">
