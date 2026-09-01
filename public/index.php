@@ -14,6 +14,7 @@ $pinyinData = get_pinyin_data();
 $kanaData = get_kana_data();
 $hangulData = get_hangul_data();
 $vocabPacks = get_language_vocab_packs();
+$jaGrammarData = get_japanese_grammar_data($config);
 $recentLogs = fetch_recent_logs($db, 15);
 
 $activeLang = $_GET['lang'] ?? 'en';
@@ -477,31 +478,239 @@ $basePath = $config['public_base_path'] ?? '';
         <!-- ========================================================================= -->
         <!-- TAB 3: JAPANESE - KANA & JLPT N5 STUDIO -->
         <!-- ========================================================================= -->
+        <!-- TAB 3: JAPANESE - JLPT N1-N5 GRAMMAR, KANA & VOCAB STUDIO -->
+        <!-- ========================================================================= -->
         <?php if ($activeLang === 'ja'): ?>
         <section id="module-ja" class="space-y-6">
-            <div class="bg-gradient-to-r from-slate-900 via-emerald-950/30 to-slate-900 border border-emerald-500/20 rounded-2xl p-5 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <!-- Header Banner -->
+            <div class="bg-gradient-to-r from-slate-900 via-emerald-950/40 to-slate-900 border border-emerald-500/20 rounded-2xl p-5 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <div class="flex items-center gap-2">
                         <span class="text-2xl">🇯🇵</span>
-                        <h1 class="text-xl font-bold text-white">Học Tiếng Nhật - Bảng Chữ Cái & JLPT N5</h1>
-                        <span class="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold">Hiragana • Katakana • Kanji</span>
+                        <h1 class="text-xl font-bold text-white">Học Tiếng Nhật - Ngữ Pháp JLPT (N1 - N5) & Bảng Chữ Cái</h1>
+                        <span class="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold">N1 - N5 Full Grammar</span>
                     </div>
-                    <p class="text-sm text-slate-400 mt-1">Bảng 50 âm cơ bản, âm đục (Dakuten) và từ vựng sơ cấp N5 kèm âm thanh phát âm.</p>
+                    <p class="text-sm text-slate-400 mt-1">Kho tàng <?= $jaGrammarData['total_count'] ?>+ mẫu ngữ pháp phân cấp từ N5 đến N1 kèm mẫu câu, ý nghĩa, link tham khảo, ví dụ minh họa & phát âm.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-300 font-mono">
+                        Tổng cộng: <strong class="text-emerald-400 font-bold"><?= $jaGrammarData['total_count'] ?></strong> mẫu câu
+                    </span>
+                    <button onclick="switchJaTab('grammar')" class="text-xs px-3.5 py-1.5 rounded-xl bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-600/40 font-medium transition">
+                        📚 Danh mục Ngữ Pháp
+                    </button>
                 </div>
             </div>
 
-            <!-- Sub Navigation -->
-            <div class="flex gap-2 border-b border-slate-800 pb-2">
-                <button onclick="switchJaTab('kana')" id="jaTabKana" class="subtab-btn active px-4 py-2 rounded-xl text-sm font-medium border border-transparent">
+            <!-- Sub Navigation Tabs -->
+            <div class="flex gap-2 border-b border-slate-800 pb-2 overflow-x-auto custom-scrollbar">
+                <button onclick="switchJaTab('grammar')" id="jaTabGrammar" class="subtab-btn active px-4 py-2 rounded-xl text-sm font-medium border border-transparent whitespace-nowrap">
+                    📚 Ngữ Pháp JLPT (N1 - N5)
+                </button>
+                <button onclick="switchJaTab('kana')" id="jaTabKana" class="subtab-btn px-4 py-2 rounded-xl text-sm font-medium border border-transparent bg-slate-800 text-slate-300 hover:bg-slate-700 whitespace-nowrap">
                     🗾 Bảng Hiragana & Katakana
                 </button>
-                <button onclick="switchJaTab('vocab')" id="jaTabVocab" class="subtab-btn px-4 py-2 rounded-xl text-sm font-medium border border-transparent bg-slate-800 text-slate-300 hover:bg-slate-700">
+                <button onclick="switchJaTab('vocab')" id="jaTabVocab" class="subtab-btn px-4 py-2 rounded-xl text-sm font-medium border border-transparent bg-slate-800 text-slate-300 hover:bg-slate-700 whitespace-nowrap">
                     🌸 Từ Vựng JLPT N5 & Kanji
                 </button>
             </div>
 
-            <!-- Pane: Kana Chart -->
-            <div id="jaPaneKana" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+            <!-- ================================================================= -->
+            <!-- PANE 1: JLPT GRAMMAR (N1 - N5) -->
+            <!-- ================================================================= -->
+            <div id="jaPaneGrammar" class="space-y-5">
+                <!-- Level Selector Bar & Filter Controls -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-4">
+                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                        <!-- Level Pills -->
+                        <div class="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1">
+                            <span class="text-xs font-semibold text-slate-400 mr-1 whitespace-nowrap">Cấp độ:</span>
+                            <button onclick="filterJaGrammarLevel('ALL')" id="jaLvlBtn_ALL" 
+                                    class="ja-lvl-btn px-3 py-1.5 rounded-xl text-xs font-bold transition border border-emerald-500/50 bg-emerald-500/20 text-emerald-300 whitespace-nowrap">
+                                Tất cả (<?= $jaGrammarData['total_count'] ?>)
+                            </button>
+                            <?php foreach ($jaGrammarData['levels'] as $lvlKey => $lvlInfo): ?>
+                                <?php 
+                                    $itemCount = count($lvlInfo['items']);
+                                    $badgeStyles = [
+                                        'N5' => 'border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20',
+                                        'N4' => 'border-teal-500/30 text-teal-300 hover:bg-teal-500/20',
+                                        'N3' => 'border-sky-500/30 text-sky-300 hover:bg-sky-500/20',
+                                        'N2' => 'border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/20',
+                                        'N1' => 'border-purple-500/30 text-purple-300 hover:bg-purple-500/20',
+                                    ][$lvlKey] ?? 'border-slate-700 text-slate-300';
+                                ?>
+                                <button onclick="filterJaGrammarLevel('<?= $lvlKey ?>')" id="jaLvlBtn_<?= $lvlKey ?>"
+                                        class="ja-lvl-btn px-3 py-1.5 rounded-xl text-xs font-semibold transition border bg-slate-950/80 <?= $badgeStyles ?> whitespace-nowrap">
+                                    <?= $lvlKey ?> (<?= $itemCount ?>)
+                                </button>
+                            <?php endforeach; ?>
+                        </div>
+
+                        <!-- Search & View Mode Switch -->
+                        <div class="flex items-center gap-2">
+                            <!-- View Toggle (Table / Card) -->
+                            <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+                                <button onclick="setJaGrammarView('table')" id="jaViewBtnTable" 
+                                        class="px-2.5 py-1 rounded-lg font-medium transition bg-indigo-600 text-white shadow">
+                                    📋 Bảng
+                                </button>
+                                <button onclick="setJaGrammarView('cards')" id="jaViewBtnCards" 
+                                        class="px-2.5 py-1 rounded-lg font-medium transition text-slate-400 hover:text-white">
+                                    🎴 Thẻ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Search Input Bar -->
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                            🔍
+                        </span>
+                        <input type="text" id="jaGrammarSearchInput" oninput="filterJaGrammarLive()" 
+                               placeholder="Tìm kiếm mẫu câu tiếng Nhật, ý nghĩa tiếng Việt, Romaji, từ khóa (ví dụ: は, kara, nếu, so sánh...)"
+                               class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition">
+                        <button onclick="clearJaGrammarSearch()" id="jaGrammarClearSearch" 
+                                class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-white" style="display:none;">
+                            ✕
+                        </button>
+                    </div>
+
+                    <!-- Filter Stats Bar -->
+                    <div class="flex items-center justify-between text-xs text-slate-400 pt-1 border-t border-slate-800/60">
+                        <div id="jaGrammarCountText">
+                            Hiển thị <strong id="jaVisibleCount" class="text-emerald-400"><?= $jaGrammarData['total_count'] ?></strong> / <?= $jaGrammarData['total_count'] ?> mẫu ngữ pháp
+                        </div>
+                        <div class="text-slate-500 hidden sm:block">
+                            💡 Bấm 🔊 để nghe phát âm mẫu câu & ví dụ • Bấm 🔗 để xem bài viết tham khảo
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TABLE VIEW -->
+                <div id="jaGrammarTableView" class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                    <div class="overflow-x-auto custom-scrollbar max-h-[800px]">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="sticky top-0 bg-slate-950/95 backdrop-blur z-10 border-b border-slate-800 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                <tr>
+                                    <th class="py-3 px-3.5 text-center w-14"># STT</th>
+                                    <th class="py-3 px-3 text-center w-16">Cấp độ</th>
+                                    <th class="py-3 px-4 min-w-[220px]">Mẫu Câu & Cách Đọc</th>
+                                    <th class="py-3 px-4 min-w-[200px]">Ý Nghĩa</th>
+                                    <th class="py-3 px-4 min-w-[280px]">Ví Dụ & Ghi Chú</th>
+                                    <th class="py-3 px-4 text-center w-28">Tham Khảo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="jaGrammarTableBody" class="divide-y divide-slate-800/70 text-sm">
+                                <?php foreach ($jaGrammarData['all_items'] as $globalIdx => $item): ?>
+                                    <?php 
+                                        $lvl = $item['level'];
+                                        $lvlBadgeClass = [
+                                            'N5' => 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+                                            'N4' => 'bg-teal-500/20 text-teal-300 border-teal-500/40',
+                                            'N3' => 'bg-sky-500/20 text-sky-300 border-sky-500/40',
+                                            'N2' => 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40',
+                                            'N1' => 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+                                        ][$lvl] ?? 'bg-slate-800 text-slate-300 border-slate-700';
+
+                                        $searchHaystack = mb_strtolower($item['pattern'] . ' ' . $item['meaning'] . ' ' . $item['example'] . ' ' . ($item['note'] ?? '') . ' ' . $item['level'], 'UTF-8');
+                                    ?>
+                                    <tr class="ja-grammar-row hover:bg-slate-800/50 transition group"
+                                        id="jaRow_<?= $globalIdx ?>"
+                                        data-global-idx="<?= $globalIdx ?>">
+                                        <!-- STT -->
+                                        <td class="py-3.5 px-3.5 text-center font-mono text-xs text-slate-400 font-medium">
+                                            #<?= $item['stt'] ?>
+                                        </td>
+                                        <!-- Level Badge -->
+                                        <td class="py-3.5 px-3 text-center">
+                                            <span class="inline-block text-[11px] font-bold px-2 py-0.5 rounded-full border <?= $lvlBadgeClass ?>">
+                                                <?= $lvl ?>
+                                            </span>
+                                        </td>
+                                        <!-- Pattern -->
+                                        <td class="py-3.5 px-4">
+                                            <div class="flex items-center gap-2">
+                                                <span class="font-bold text-slate-100 group-hover:text-emerald-300 transition font-serif text-base">
+                                                    <?= h($item['pattern']) ?>
+                                                </span>
+                                                <button onclick="speakJaText('<?= addslashes($item['pattern']) ?>')" 
+                                                        title="Nghe phát âm mẫu câu"
+                                                        class="p-1.5 rounded-lg bg-slate-800/80 text-emerald-400 hover:bg-emerald-500/20 border border-slate-700/60 hover:border-emerald-500/30 transition text-xs flex-shrink-0">
+                                                    🔊
+                                                </button>
+                                            </div>
+                                        </td>
+                                        <!-- Meaning -->
+                                        <td class="py-3.5 px-4 font-medium text-slate-200">
+                                            <?= h($item['meaning']) ?>
+                                        </td>
+                                        <!-- Example & Note -->
+                                        <td class="py-3.5 px-4 space-y-1.5 text-xs">
+                                            <?php if (!empty($item['example'])): ?>
+                                                <div class="bg-slate-950/80 p-2 rounded-lg border border-slate-800/80 text-slate-300 flex items-start justify-between gap-2">
+                                                    <div>
+                                                        <span class="text-slate-400 font-semibold mr-1">VD:</span>
+                                                        <span><?= h($item['example']) ?></span>
+                                                    </div>
+                                                    <button onclick="speakJaText('<?= addslashes($item['example']) ?>')" 
+                                                            title="Nghe phát âm ví dụ"
+                                                            class="p-1 rounded bg-slate-800 text-slate-300 hover:text-emerald-300 hover:bg-slate-700 text-[10px] flex-shrink-0">
+                                                        🔊
+                                                    </button>
+                                                </div>
+                                            <?php endif; ?>
+                                            <?php if (!empty($item['note'])): ?>
+                                                <div class="text-[11px] text-slate-400/90 leading-tight">
+                                                    <span class="text-indigo-400 font-semibold">📌</span> <?= h($item['note']) ?>
+                                                </div>
+                                            <?php endif; ?>
+                                        </td>
+                                        <!-- Link & Action -->
+                                        <td class="py-3.5 px-4 text-center">
+                                            <div class="flex items-center justify-center gap-1.5">
+                                                <?php if (!empty($item['link'])): ?>
+                                                    <a href="<?= h($item['link']) ?>" target="_blank" rel="noopener noreferrer"
+                                                       title="Xem bài viết giải thích cách dùng chi tiết"
+                                                       class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/20 text-xs font-medium transition whitespace-nowrap">
+                                                        <span>🔗</span>
+                                                        <span>Chi tiết</span>
+                                                    </a>
+                                                <?php endif; ?>
+                                                <button onclick="openJaGrammarModal(<?= $globalIdx ?>)" 
+                                                        title="Xem thẻ thông tin đầy đủ"
+                                                        class="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition text-xs">
+                                                    🔍
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- CARD VIEW (Dynamically rendered for high performance) -->
+                <div id="jaGrammarCardView" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" style="display:none;">
+                </div>
+
+                <!-- Empty State -->
+                <div id="jaGrammarEmptyState" class="bg-slate-900 border border-slate-800 rounded-2xl p-10 text-center space-y-3" style="display:none;">
+                    <span class="text-4xl">🔎</span>
+                    <h3 class="text-lg font-bold text-white">Không tìm thấy mẫu ngữ pháp phù hợp</h3>
+                    <p class="text-sm text-slate-400">Hãy thử nhập từ khóa khác hoặc xóa bộ lọc để hiển thị toàn bộ danh sách.</p>
+                    <button onclick="clearJaGrammarSearch()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition">
+                        Xóa tìm kiếm & Xem tất cả
+                    </button>
+                </div>
+            </div>
+
+            <!-- ================================================================= -->
+            <!-- PANE 2: KANA CHART -->
+            <!-- ================================================================= -->
+            <div id="jaPaneKana" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4" style="display:none;">
                 <h3 class="text-base font-bold text-white flex items-center gap-2">
                     <span>🎌</span> Bảng Chữ Cái 50 Âm (Hiragana / Katakana / Romaji)
                 </h3>
@@ -521,7 +730,9 @@ $basePath = $config['public_base_path'] ?? '';
                 </div>
             </div>
 
-            <!-- Pane: JLPT Vocab -->
+            <!-- ================================================================= -->
+            <!-- PANE 3: JLPT VOCAB -->
+            <!-- ================================================================= -->
             <div id="jaPaneVocab" class="space-y-6" style="display:none;">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <?php foreach ($vocabPacks['ja'] as $pack): ?>
@@ -541,8 +752,58 @@ $basePath = $config['public_base_path'] ?? '';
                     <?php endforeach; ?>
                 </div>
             </div>
+
+            <!-- MODAL: GRAMMAR DETAIL POPUP -->
+            <div id="jaGrammarModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style="display:none;">
+                <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 space-y-5 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+                    <button onclick="closeJaGrammarModal()" class="absolute top-4 right-4 p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition">
+                        ✕
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <span id="modalLvlBadge" class="text-xs font-bold px-2.5 py-1 rounded-full border bg-emerald-500/20 text-emerald-300 border-emerald-500/40">N5</span>
+                        <span id="modalSttBadge" class="text-xs font-mono text-slate-400 font-semibold">STT #1</span>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-3">
+                            <h2 id="modalPattern" class="text-2xl font-bold text-emerald-300 font-serif">Mẫu câu</h2>
+                            <button onclick="speakModalPattern()" class="p-2 rounded-xl bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 text-sm">
+                                🔊 Nghe
+                            </button>
+                        </div>
+                        <p id="modalMeaning" class="text-base text-slate-200 font-medium mt-1">Ý nghĩa tiếng Việt</p>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                            <div class="flex items-center justify-between text-xs font-semibold text-slate-400">
+                                <span>📝 CÂU VÍ DỤ MINH HỌA</span>
+                                <button onclick="speakModalExample()" class="text-emerald-400 hover:underline text-xs">🔊 Nghe ví dụ</button>
+                            </div>
+                            <div id="modalExample" class="text-sm text-slate-100 leading-relaxed font-sans">
+                                Câu ví dụ
+                            </div>
+                        </div>
+                        <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800/80 space-y-1">
+                            <div class="text-xs font-semibold text-indigo-300">📌 CẤU TRÚC KẾT HỢP & GHI CHÚ</div>
+                            <div id="modalNote" class="text-xs text-slate-300 leading-relaxed">
+                                Ghi chú
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between pt-3 border-t border-slate-800">
+                        <a id="modalRefLink" href="#" target="_blank" rel="noopener noreferrer"
+                           class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition">
+                            <span>🔗 Xem bài viết chi tiết tại Minder JP</span>
+                            <span>↗</span>
+                        </a>
+                        <button onclick="closeJaGrammarModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition">
+                            Đóng
+                        </button>
+                    </div>
+                </div>
+            </div>
         </section>
         <?php endif; ?>
+
 
 
         <!-- ========================================================================= -->
@@ -1127,11 +1388,247 @@ $basePath = $config['public_base_path'] ?? '';
             document.getElementById('zhTabHsk').className = `subtab-btn px-4 py-2 rounded-xl text-sm font-medium border border-transparent ${tab === 'hsk' ? 'active' : 'bg-slate-800 text-slate-300'}`;
         }
 
+        // Japanese Grammar (N1-N5) Management & Interactive Search
+        const JA_GRAMMAR_ITEMS = <?= json_encode($jaGrammarData['all_items'] ?? [], JSON_UNESCAPED_UNICODE) ?>;
+        let currentJaGrammarLevel = 'ALL';
+        let currentJaGrammarView = 'table';
+        let currentJaGrammarModalIdx = null;
+
         function switchJaTab(tab) {
-            document.getElementById('jaPaneKana').style.display = tab === 'kana' ? 'block' : 'none';
-            document.getElementById('jaPaneVocab').style.display = tab === 'vocab' ? 'block' : 'none';
-            document.getElementById('jaTabKana').className = `subtab-btn px-4 py-2 rounded-xl text-sm font-medium border border-transparent ${tab === 'kana' ? 'active' : 'bg-slate-800 text-slate-300'}`;
-            document.getElementById('jaTabVocab').className = `subtab-btn px-4 py-2 rounded-xl text-sm font-medium border border-transparent ${tab === 'vocab' ? 'active' : 'bg-slate-800 text-slate-300'}`;
+            const paneGrammar = document.getElementById('jaPaneGrammar');
+            const paneKana = document.getElementById('jaPaneKana');
+            const paneVocab = document.getElementById('jaPaneVocab');
+
+            const tabGrammar = document.getElementById('jaTabGrammar');
+            const tabKana = document.getElementById('jaTabKana');
+            const tabVocab = document.getElementById('jaTabVocab');
+
+            if (paneGrammar) paneGrammar.style.display = tab === 'grammar' ? 'block' : 'none';
+            if (paneKana) paneKana.style.display = tab === 'kana' ? 'block' : 'none';
+            if (paneVocab) paneVocab.style.display = tab === 'vocab' ? 'block' : 'none';
+
+            if (tabGrammar) tabGrammar.className = `subtab-btn px-4 py-2 rounded-xl text-sm font-medium border border-transparent whitespace-nowrap ${tab === 'grammar' ? 'active' : 'bg-slate-800 text-slate-300'}`;
+            if (tabKana) tabKana.className = `subtab-btn px-4 py-2 rounded-xl text-sm font-medium border border-transparent whitespace-nowrap ${tab === 'kana' ? 'active' : 'bg-slate-800 text-slate-300'}`;
+            if (tabVocab) tabVocab.className = `subtab-btn px-4 py-2 rounded-xl text-sm font-medium border border-transparent whitespace-nowrap ${tab === 'vocab' ? 'active' : 'bg-slate-800 text-slate-300'}`;
+        }
+
+        function filterJaGrammarLevel(level) {
+            currentJaGrammarLevel = level;
+            
+            // Update button active styles
+            document.querySelectorAll('.ja-lvl-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-emerald-500/30', 'border-emerald-500', 'font-bold');
+                btn.classList.add('bg-slate-950/80');
+            });
+            const activeBtn = document.getElementById(`jaLvlBtn_${level}`);
+            if (activeBtn) {
+                activeBtn.classList.add('active', 'bg-emerald-500/30', 'border-emerald-500', 'font-bold');
+                activeBtn.classList.remove('bg-slate-950/80');
+            }
+
+            filterJaGrammarLive();
+        }
+
+        function filterJaGrammarLive() {
+            const query = (document.getElementById('jaGrammarSearchInput')?.value || '').trim().toLowerCase();
+            const clearBtn = document.getElementById('jaGrammarClearSearch');
+            if (clearBtn) clearBtn.style.display = query !== '' ? 'flex' : 'none';
+
+            let visibleCount = 0;
+            const matchedIndices = [];
+
+            JA_GRAMMAR_ITEMS.forEach((item, idx) => {
+                const matchesLvl = (currentJaGrammarLevel === 'ALL' || item.level === currentJaGrammarLevel);
+                let matchesQuery = true;
+                if (query !== '') {
+                    const haystack = (item.pattern + ' ' + item.meaning + ' ' + (item.example || '') + ' ' + (item.note || '') + ' ' + item.level).toLowerCase();
+                    matchesQuery = haystack.includes(query);
+                }
+
+                const isVisible = matchesLvl && matchesQuery;
+                const row = document.getElementById(`jaRow_${idx}`);
+                if (row) {
+                    row.style.display = isVisible ? '' : 'none';
+                }
+
+                if (isVisible) {
+                    visibleCount++;
+                    matchedIndices.push(idx);
+                }
+            });
+
+            // Update Counter
+            const countElem = document.getElementById('jaVisibleCount');
+            if (countElem) countElem.innerText = visibleCount;
+
+            // Empty state & Container toggles
+            const emptyElem = document.getElementById('jaGrammarEmptyState');
+            const tableElem = document.getElementById('jaGrammarTableView');
+            const cardElem = document.getElementById('jaGrammarCardView');
+
+            if (visibleCount === 0) {
+                if (emptyElem) emptyElem.style.display = 'block';
+                if (tableElem) tableElem.style.display = 'none';
+                if (cardElem) cardElem.style.display = 'none';
+            } else {
+                if (emptyElem) emptyElem.style.display = 'none';
+                if (currentJaGrammarView === 'table') {
+                    if (tableElem) tableElem.style.display = 'block';
+                    if (cardElem) cardElem.style.display = 'none';
+                } else {
+                    if (tableElem) tableElem.style.display = 'none';
+                    if (cardElem) {
+                        cardElem.style.display = 'grid';
+                        renderJaCards(matchedIndices);
+                    }
+                }
+            }
+        }
+
+        function renderJaCards(indices) {
+            const cardContainer = document.getElementById('jaGrammarCardView');
+            if (!cardContainer) return;
+
+            const renderList = indices.slice(0, 100);
+            const badgeClasses = {
+                'N5': 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+                'N4': 'bg-teal-500/20 text-teal-300 border-teal-500/40',
+                'N3': 'bg-sky-500/20 text-sky-300 border-sky-500/40',
+                'N2': 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40',
+                'N1': 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+            };
+
+            cardContainer.innerHTML = renderList.map(idx => {
+                const item = JA_GRAMMAR_ITEMS[idx];
+                const badge = badgeClasses[item.level] || 'bg-slate-800 text-slate-300 border-slate-700';
+                const safePattern = (item.pattern || '').replace(/"/g, '&quot;');
+                const safeMeaning = (item.meaning || '').replace(/"/g, '&quot;');
+                const safeExample = (item.example || '').replace(/"/g, '&quot;');
+                const safeNote = (item.note || '').replace(/"/g, '&quot;');
+
+                return `
+                    <div class="ja-grammar-card bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3.5 hover:border-emerald-500/30 transition shadow-lg flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-mono text-slate-400 font-bold">#${item.stt}</span>
+                                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full border ${badge}">
+                                        ${item.level}
+                                    </span>
+                                </div>
+                                <button onclick="speakJaText('${safePattern.replace(/'/g, "\\'")}')" 
+                                        title="Nghe phát âm mẫu câu"
+                                        class="p-1.5 px-2.5 rounded-xl bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 text-xs transition flex items-center gap-1">
+                                    <span>🔊</span> <span>Phát âm</span>
+                                </button>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-emerald-300 font-serif leading-snug">${safePattern}</h3>
+                                <p class="text-sm font-semibold text-slate-200 mt-1">${safeMeaning}</p>
+                            </div>
+                            ${item.example ? `
+                                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/90 text-xs text-slate-300 space-y-1.5">
+                                    <div class="flex items-center justify-between text-slate-400 font-semibold text-[11px]">
+                                        <span>📝 Ví dụ minh họa:</span>
+                                        <button onclick="speakJaText('${safeExample.replace(/'/g, "\\'")}')" class="text-emerald-400 hover:underline text-[11px]">🔊 Nghe</button>
+                                    </div>
+                                    <div class="text-slate-200 leading-relaxed">${safeExample}</div>
+                                </div>
+                            ` : ''}
+                            ${item.note ? `
+                                <div class="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60 text-[11px] text-slate-400 leading-relaxed">
+                                    <strong class="text-indigo-300">📌 Ghi chú:</strong> ${safeNote}
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                            ${item.link ? `
+                                <a href="${item.link}" target="_blank" rel="noopener noreferrer"
+                                   class="inline-flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 hover:underline">
+                                    <span>🔗 Xem cách dùng</span>
+                                    <span class="text-[10px]">↗</span>
+                                </a>
+                            ` : '<span></span>'}
+                            <button onclick="openJaGrammarModal(${idx})" 
+                                    class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition">
+                                🔍 Xem đủ
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (indices.length > 100) {
+                cardContainer.innerHTML += `
+                    <div class="col-span-full text-center py-4 text-xs text-slate-400">
+                        Đang hiển thị 100 / ${indices.length} thẻ. Hãy sử dụng bộ lọc cấp độ hoặc ô tìm kiếm để thu hẹp kết quả.
+                    </div>
+                `;
+            }
+        }
+
+        function clearJaGrammarSearch() {
+            const input = document.getElementById('jaGrammarSearchInput');
+            if (input) input.value = '';
+            filterJaGrammarLevel('ALL');
+        }
+
+        function setJaGrammarView(mode) {
+            currentJaGrammarView = mode;
+            const btnTable = document.getElementById('jaViewBtnTable');
+            const btnCards = document.getElementById('jaViewBtnCards');
+
+            if (mode === 'table') {
+                if (btnTable) { btnTable.className = 'px-2.5 py-1 rounded-lg font-medium transition bg-indigo-600 text-white shadow'; }
+                if (btnCards) { btnCards.className = 'px-2.5 py-1 rounded-lg font-medium transition text-slate-400 hover:text-white'; }
+            } else {
+                if (btnCards) { btnCards.className = 'px-2.5 py-1 rounded-lg font-medium transition bg-indigo-600 text-white shadow'; }
+                if (btnTable) { btnTable.className = 'px-2.5 py-1 rounded-lg font-medium transition text-slate-400 hover:text-white'; }
+            }
+            filterJaGrammarLive();
+        }
+
+        function openJaGrammarModal(idx) {
+            currentJaGrammarModalIdx = idx;
+            const item = JA_GRAMMAR_ITEMS[idx];
+            if (!item) return;
+
+            document.getElementById('modalLvlBadge').innerText = item.level;
+            document.getElementById('modalSttBadge').innerText = `STT #${item.stt}`;
+            document.getElementById('modalPattern').innerText = item.pattern;
+            document.getElementById('modalMeaning').innerText = item.meaning;
+            document.getElementById('modalExample').innerText = item.example || 'Chưa có ví dụ chi tiết.';
+            document.getElementById('modalNote').innerText = item.note || 'Xem thêm cách dùng và các cấu trúc biến thể trong bài viết tham khảo.';
+
+            const refLink = document.getElementById('modalRefLink');
+            if (refLink) {
+                if (item.link) {
+                    refLink.href = item.link;
+                    refLink.style.display = 'inline-flex';
+                } else {
+                    refLink.style.display = 'none';
+                }
+            }
+
+            const modal = document.getElementById('jaGrammarModal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function closeJaGrammarModal() {
+            const modal = document.getElementById('jaGrammarModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function speakModalPattern() {
+            if (currentJaGrammarModalIdx !== null && JA_GRAMMAR_ITEMS[currentJaGrammarModalIdx]) {
+                speakJaText(JA_GRAMMAR_ITEMS[currentJaGrammarModalIdx].pattern);
+            }
+        }
+
+        function speakModalExample() {
+            if (currentJaGrammarModalIdx !== null && JA_GRAMMAR_ITEMS[currentJaGrammarModalIdx]) {
+                speakJaText(JA_GRAMMAR_ITEMS[currentJaGrammarModalIdx].example);
+            }
         }
 
         function switchKoTab(tab) {
