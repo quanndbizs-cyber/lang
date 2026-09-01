@@ -7,7 +7,7 @@
  * - Japanese (Hiragana, Katakana, JLPT N5 Vocab & Kanji)
  * - Korean (Hangul Alphabet, TOPIK I Core Vocab & Expressions)
  */
-
+if (!function_exists('get_pinyin_data')) {
 function get_pinyin_data(): array
 {
     return [
@@ -60,7 +60,7 @@ function get_pinyin_data(): array
         ]
     ];
 }
-
+}
 function get_kana_data(): array
 {
     return [
