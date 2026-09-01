@@ -13,13 +13,15 @@ class HomeController {
     /**
      * Hiển thị trang chủ / Bản đồ bài học
      */
-    public function index() {
-        $lang = $_GET['lang'] ?? 'en'; // Mặc định chọn Tiếng Anh
-        $languages = $this->model->getLanguages();
-        $lessons = $this->model->getLessonsByLanguage($lang);
-        $userProgress = $_SESSION['user_progress'] ?? [];
+	public function index() {
+		$lang = $_GET['lang'] ?? 'en';
+		$languages = $this->model->getLanguages();
+		
+		// 🛠️ Đổi getLessonsByLanguage thành getLevelsByLanguage
+		$levels = $this->model->getLevelsByLanguage($lang); 
+		
+		$userProgress = $_SESSION['user_progress'] ?? [];
 
-        // Nạp giao diện trang chủ
-        require_once __DIR__ . '/../views/home.php';
-    }
+		require_once __DIR__ . '/../views/home.php';
+	}
 }
